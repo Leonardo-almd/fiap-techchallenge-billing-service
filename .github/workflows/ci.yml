@@ -36,15 +36,15 @@ jobs:
 
       - name: Build with Maven
         id: build_step
-        run: ./mvnw clean compile -B
+        run: mvn clean compile -B
 
       - name: Run Unit Tests
         id: unit_tests
-        run: ./mvnw test -B
+        run: mvn test -B
 
       - name: Run Integration Tests
         id: integration_tests
-        run: ./mvnw verify -DskipUnitTests -B
+        run: mvn verify -DskipUnitTests -B
 
       - name: CI Build Summary
         if: always()
@@ -89,12 +89,12 @@ jobs:
 
       - name: Run Checkstyle
         id: checkstyle
-        run: ./mvnw checkstyle:check -B
+        run: mvn checkstyle:check -B
         continue-on-error: true
 
       - name: Run SpotBugs
         id: spotbugs
-        run: ./mvnw spotbugs:check -B
+        run: mvn spotbugs:check -B
         continue-on-error: true
 
       - name: Code Quality Summary
@@ -127,7 +127,7 @@ jobs:
 
       - name: OWASP Dependency Check
         id: owasp
-        run: ./mvnw org.owasp:dependency-check-maven:check -B
+        run: mvn org.owasp:dependency-check-maven:check -B
         continue-on-error: true
 
       - name: Upload Security Report
@@ -167,7 +167,7 @@ jobs:
           cache: maven
 
       - name: Build and Run Tests with Coverage
-        run: ./mvnw clean verify jacoco:report -B
+        run: mvn clean verify jacoco:report -B
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
@@ -244,7 +244,7 @@ jobs:
 
       - name: Run Cucumber BDD Tests
         id: bdd
-        run: ./mvnw test -Dcucumber.filter.tags="not @ignore" -B
+        run: mvn test -Dcucumber.filter.tags="not @ignore" -B
 
       - name: Upload Cucumber Report
         uses: actions/upload-artifact@v4

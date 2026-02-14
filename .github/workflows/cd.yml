@@ -49,12 +49,12 @@ jobs:
       - name: Extract version from POM
         id: version
         run: |
-          VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Extracted version: ${VERSION}"
 
       - name: Build with Maven
-        run: ./mvnw clean package -DskipTests -B
+        run: mvn clean package -DskipTests -B
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
