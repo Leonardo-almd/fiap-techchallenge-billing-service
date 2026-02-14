@@ -12,10 +12,12 @@ import io.cucumber.java.pt.Quando;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -105,7 +107,7 @@ public class BudgetApprovalSteps {
     public void aDataDeAtualizacaoDeveSerRecente() {
         assertThat(resultBudget.updatedAt())
             .isAfter(testBudget.updatedAt())
-            .isCloseTo(LocalDateTime.now(), org.assertj.core.data.TemporalUnitWithinOffset.within(5, java.time.temporal.ChronoUnit.SECONDS));
+            .isCloseTo(LocalDateTime.now(), within(5, ChronoUnit.SECONDS));
     }
 
     @Então("devo receber um erro de {string}")

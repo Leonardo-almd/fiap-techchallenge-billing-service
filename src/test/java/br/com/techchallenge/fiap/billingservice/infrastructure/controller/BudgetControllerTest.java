@@ -2,6 +2,7 @@ package br.com.techchallenge.fiap.billingservice.infrastructure.controller;
 
 import br.com.techchallenge.fiap.billingservice.application.controller.BudgetCleanArchController;
 import br.com.techchallenge.fiap.billingservice.application.dto.BudgetDto;
+import br.com.techchallenge.fiap.billingservice.application.dto.BudgetItemDto;
 import br.com.techchallenge.fiap.billingservice.application.dto.BudgetItemRequestDto;
 import br.com.techchallenge.fiap.billingservice.application.dto.BudgetRequestDto;
 import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItemType;
@@ -128,11 +129,13 @@ class BudgetControllerTest {
             "ORDER-001",
             "CUST-001",
             "VEH-001",
-            List.of(),
+            List.<BudgetItemDto>of(),
             new BigDecimal("100.00"),
             "PENDING_APPROVAL",
             LocalDateTime.now(),
-            LocalDateTime.now()
+            LocalDateTime.now(),
+            null,
+            null
         );
     }
 
@@ -142,11 +145,13 @@ class BudgetControllerTest {
             "ORDER-001",
             "CUST-001",
             "VEH-001",
-            List.of(),
+            List.<BudgetItemDto>of(),
             new BigDecimal("100.00"),
             "APPROVED",
             LocalDateTime.now().minusHours(1),
-            LocalDateTime.now()
+            LocalDateTime.now(),
+            LocalDateTime.now(),
+            null
         );
     }
 
@@ -156,10 +161,12 @@ class BudgetControllerTest {
             "ORDER-001",
             "CUST-001",
             "VEH-001",
-            List.of(),
+            List.<BudgetItemDto>of(),
             new BigDecimal("100.00"),
             "REJECTED",
             LocalDateTime.now().minusHours(1),
+            LocalDateTime.now(),
+            null,
             LocalDateTime.now()
         );
     }
