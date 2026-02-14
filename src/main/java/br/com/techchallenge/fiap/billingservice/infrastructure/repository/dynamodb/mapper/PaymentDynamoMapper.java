@@ -30,9 +30,9 @@ public class PaymentDynamoMapper {
             .budgetId(payment.budgetId())
             .serviceOrderId(payment.serviceOrderId())
             .amount(payment.amount().value())
-            .methodCode(payment.method().code())
+            .methodCode(payment.method().name())
             .methodName(payment.method().name())
-            .statusCode(payment.status().code())
+            .statusCode(payment.status().name())
             .statusName(payment.status().name())
             .externalId(payment.externalId())
             .authorizationCode(payment.authorizationCode())
@@ -46,14 +46,14 @@ public class PaymentDynamoMapper {
      * Convert DynamoDB model to Payment domain entity.
      */
     public Payment toDomain(PaymentDynamoModel model) {
-        PaymentMethod method = PaymentMethod.fromCode(model.methodCode());
-        PaymentStatus status = PaymentStatusEnum.fromCode(model.statusCode()).toEntity();
+        PaymentMethod method = PaymentMethod.valueOf(model.methodCode());
+        PaymentStatus status = new PaymentStatus(PaymentStatusEnum.valueOf(model.statusCode()));
 
         return Payment.builder()
             .paymentId(model.paymentId())
             .budgetId(model.budgetId())
             .serviceOrderId(model.serviceOrderId())
-            .amount(new Price(model.amount()))
+            .amount(model.amount())
             .method(method)
             .status(status)
             .externalId(model.externalId())

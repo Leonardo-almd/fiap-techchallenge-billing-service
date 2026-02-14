@@ -174,7 +174,7 @@ public class PaymentDynamoDBRepository implements PaymentGateway {
     }
 
     @Override
-    public void delete(String paymentId) {
+    public void deleteById(String paymentId) {
         log.info("Deleting payment: {}", paymentId);
 
         Map<String, AttributeValue> key = Map.of(
