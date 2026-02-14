@@ -1,0 +1,112 @@
+spring:
+  application:
+    name: billing-service
+  
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    # Aligned with OS Service: /api/billing-service (override via ConfigMap in K8s)
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/api/v1}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+# Logging
+logging:
+  level:
+    root: INFO
+    br.com.techchallenge.fiap.billingservice: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+---
+# Local profile (development)
+spring:
+  config:
+    activate:
+      on-profile: local
+
+aws:
+  region: us-east-1
+  endpoint: http://localhost:4566
+  dynamodb:
+    tables:
+      budgets: billing-service-budgets
+      payments: billing-service-payments
+  sqs:
+    queues:
+      service-order-events: service-order-events
+      billing-events: billing-events
+
+# Disable security for local development
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/auth
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: production
+
+aws:
+  region: ${AWS_REGION:us-east-1}
+  dynamodb:
+    tables:
+      budgets: ${DYNAMODB_TABLE_BUDGETS:billing-service-budgets}
+      payments: ${DYNAMODB_TABLE_PAYMENTS:billing-service-payments}
+  sqs:
+    queues:
+      service-order-events: ${SQS_QUEUE_SERVICE_ORDER_EVENTS:service-order-events.fifo}
+      billing-events: ${SQS_QUEUE_BILLING_EVENTS:billing-events.fifo}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:https://auth.cargarage.com}
+
+---
+# Test profile
+spring:
+  config:
+    activate:
+      on-profile: test
+
+aws:
+  region: us-east-1
+  endpoint: http://localhost:4566
+  dynamodb:
+    tables:
+      budgets: billing-service-budgets-test
+      payments: billing-service-payments-test
+  sqs:
+    queues:
+      service-order-events: service-order-events-test
+      billing-events: billing-events-test
+
+logging:
+  level:
+    br.com.techchallenge.fiap.billingservice: DEBUG

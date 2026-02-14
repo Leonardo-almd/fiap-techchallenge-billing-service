@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: billing-service-config
+  namespace: billing-service
+data:
+  # Server Configuration (aligned with OS Service pattern)
+  SERVER_PORT: "8080"
+  SERVER_SERVLET_CONTEXT_PATH: "/api/billing-service"
+  
+  # AWS Configuration
+  AWS_REGION: "us-east-1"
+  
+  # DynamoDB Table Names (populated by CD pipeline from Terraform outputs when centralized)
+  DYNAMODB_TABLE_BUDGETS: "__DYNAMODB_TABLE_BUDGETS__"
+  DYNAMODB_TABLE_PAYMENTS: "__DYNAMODB_TABLE_PAYMENTS__"
+  
+  # SQS Queue Names (populated by CD pipeline from Terraform outputs)
+  # Inbound: queue where OS Service publishes (ORDER_CREATED) - Billing consumes
+  SQS_QUEUE_SERVICE_ORDER_EVENTS: "__SQS_QUEUE_SERVICE_ORDER_EVENTS__"
+  # Outbound: queue where Billing publishes (BudgetApproved, PaymentProcessed, PaymentFailed, etc.)
+  SQS_QUEUE_BILLING_EVENTS: "__SQS_QUEUE_BILLING_EVENTS__"
+  
+  # Spring Configuration
+  SPRING_PROFILES_ACTIVE: "production"
+  
+  # Actuator Configuration
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
+  MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
+  
+  # Payment Gateway Simulator (illustrative)
+  PAYMENT_GATEWAY_SUCCESS_RATE: "0.90"
+  PAYMENT_GATEWAY_MIN_DELAY_MS: "2000"
+  PAYMENT_GATEWAY_MAX_DELAY_MS: "5000"

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: billing-service-localstack
+    ports:
+      - "4566:4566"
+      - "4571:4571"
+    environment:
+      - SERVICES=dynamodb,sqs
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - billing-service-network
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: billing-service-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    depends_on:
+      - localstack
+    networks:
+      - billing-service-network
+
+networks:
+  billing-service-network:
+    driver: bridge

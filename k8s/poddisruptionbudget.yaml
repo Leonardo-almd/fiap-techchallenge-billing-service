@@ -1,0 +1,18 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: billing-service-pdb
+  namespace: billing-service
+  labels:
+    app: billing-service
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: billing-service
+  
+  # Alternativa: usar maxUnavailable
+  # maxUnavailable: 1
+  
+  # Tempo que o PDB permanece ativo após violação
+  unhealthyPodEvictionPolicy: IfHealthyBudget

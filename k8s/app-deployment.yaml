@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+  namespace: billing-service
+  labels:
+    app: billing-service
+spec:
+  # Single replica for cost optimization (educational environment); use HPA for scaling
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing-service
+  template:
+    metadata:
+      labels:
+        app: billing-service
+    spec:
+      serviceAccountName: billing-service-sa
+      containers:
+        - name: billing-service
+          image: __IMAGE_URI__
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: billing-service-config
+            - secretRef:
+                name: billing-service-secrets
+          # Resources optimized for t3.small (2 vCPU, 2GB RAM) - aligned with OS Service
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "300m"
+          livenessProbe:
+            httpGet:
+              path: /api/billing-service/actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/billing-service/actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /api/billing-service/actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - billing-service
+                topologyKey: kubernetes.io/hostname

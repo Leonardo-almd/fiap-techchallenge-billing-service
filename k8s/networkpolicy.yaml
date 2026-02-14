@@ -1,0 +1,74 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: billing-service-netpol
+  namespace: billing-service
+  labels:
+    app: billing-service
+spec:
+  podSelector:
+    matchLabels:
+      app: billing-service
+  
+  policyTypes:
+    - Ingress
+    - Egress
+  
+  # Regras de Ingress (tráfego de entrada)
+  ingress:
+    # Permitir tráfego do Ingress Controller
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+      ports:
+      - protocol: TCP
+        port: 8080
+    
+    # Permitir tráfego de outros serviços no mesmo namespace
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: billing-service
+      ports:
+      - protocol: TCP
+        port: 8080
+    
+    # Permitir Prometheus scraping (metrics)
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      ports:
+      - protocol: TCP
+        port: 8080
+  
+  # Regras de Egress (tráfego de saída)
+  egress:
+    # Permitir DNS
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: kube-system
+      ports:
+      - protocol: UDP
+        port: 53
+    
+    # Permitir acesso à AWS APIs (DynamoDB, SQS)
+    - to:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+          except:
+          - 169.254.169.254/32  # Block metadata service
+      ports:
+      - protocol: TCP
+        port: 443
+    
+    # Permitir comunicação com outros microserviços
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: service-order-service
+      ports:
+      - protocol: TCP
+        port: 80

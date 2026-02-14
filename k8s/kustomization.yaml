@@ -1,0 +1,62 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: billing-service
+  namespace: billing-service
+
+# Namespace
+namespace: billing-service
+
+# Resources (aligned with OS Service: namespace, service-account, configmap, secrets, app-deployment, app-service, hpa)
+resources:
+  - namespace.yaml
+  - service-account.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - app-deployment.yaml
+  - app-service.yaml
+  - hpa.yaml
+  # Optional (not in minimal OS-style deploy):
+  # - ingress.yaml
+  # - rbac.yaml
+  # - networkpolicy.yaml
+  # - poddisruptionbudget.yaml
+
+# Common Labels
+commonLabels:
+  app.kubernetes.io/name: billing-service
+  app.kubernetes.io/component: backend
+  app.kubernetes.io/part-of: car-garage-system
+  app.kubernetes.io/managed-by: kustomize
+
+# Common Annotations
+commonAnnotations:
+  project: tech-challenge-12soat
+  team: backend
+  version: 0.1.0
+
+# Images (substituir com image real do ECR)
+images:
+  - name: billing-service
+    newName: 123456789012.dkr.ecr.us-east-1.amazonaws.com/billing-service
+    newTag: 0.1.0
+
+# ConfigMap Generator (alternativa para configmap.yaml)
+# configMapGenerator:
+#   - name: billing-service-config
+#     literals:
+#       - AWS_REGION=us-east-1
+#       - SPRING_PROFILES_ACTIVE=production
+
+# Secret Generator (alternativa para secret.yaml, usar para valores reais)
+# secretGenerator:
+#   - name: billing-service-secrets
+#     literals:
+#       - AWS_ACCESS_KEY_ID=your-key
+#       - AWS_SECRET_ACCESS_KEY=your-secret
+
+# Replicas (pode ser sobrescrito por ambiente)
+replicas:
+  - name: billing-service
+    count: 2
