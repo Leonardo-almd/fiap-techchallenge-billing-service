@@ -153,6 +153,7 @@ jobs:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     needs: build
+    if: vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != ''
 
     steps:
       - name: Checkout code
@@ -200,7 +201,7 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: [build, code-quality, sonarcloud]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && (needs.sonarcloud.result == 'success' || needs.sonarcloud.result == 'skipped')
 
     steps:
       - name: Checkout code
