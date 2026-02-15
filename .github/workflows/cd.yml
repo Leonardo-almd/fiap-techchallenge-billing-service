@@ -211,10 +211,15 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Pods" >> $GITHUB_STEP_SUMMARY
           kubectl get pods -n billing-service -l app=billing-service -o wide 2>/dev/null | tee -a $GITHUB_STEP_SUMMARY || true
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pod describe (first pod)" >> $GITHUB_STEP_SUMMARY
           POD=$(kubectl get pods -n billing-service -l app=billing-service -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
           if [[ -n "$POD" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Pod logs (\`$POD\`)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            kubectl logs "$POD" -n billing-service --tail=200 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Pod describe" >> $GITHUB_STEP_SUMMARY
             kubectl describe pod "$POD" -n billing-service 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
