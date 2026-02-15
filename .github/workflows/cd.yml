@@ -148,6 +148,20 @@ jobs:
         run: |
           aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
 
+      - name: Create secrets manifest from template
+        run: |
+          # k8s/secrets.yaml is gitignored; create from template so CD works without committing it
+          printf '%s\n' \
+            'apiVersion: v1' \
+            'kind: Secret' \
+            'metadata:' \
+            '  name: billing-service-secrets' \
+            '  namespace: billing-service' \
+            'type: Opaque' \
+            'data:' \
+            '  _PLACEHOLDER: __PLACEHOLDER_B64__' \
+            > k8s/secrets.yaml
+
       - name: Prepare Kubernetes manifests
         env:
           IRSA_ROLE_ARN: ${{ steps.parsed-outputs.outputs.IRSA_ROLE_ARN }}
