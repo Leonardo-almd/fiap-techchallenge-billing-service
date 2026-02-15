@@ -142,7 +142,7 @@ public class BudgetDynamoDBRepository implements BudgetGateway {
     }
 
     @Override
-    public void delete(String budgetId) {
+    public void deleteById(String budgetId) {
         log.info("Deleting budget: {}", budgetId);
 
         Map<String, AttributeValue> key = Map.of(

@@ -42,6 +42,11 @@ spring:
   config:
     activate:
       on-profile: local
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/auth
 
 aws:
   region: us-east-1
@@ -55,20 +60,17 @@ aws:
       service-order-events: service-order-events
       billing-events: billing-events
 
-# Disable security for local development
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8081/auth
-
 ---
 # Production profile
 spring:
   config:
     activate:
       on-profile: production
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:https://auth.cargarage.com}
 
 aws:
   region: ${AWS_REGION:us-east-1}
@@ -80,13 +82,6 @@ aws:
     queues:
       service-order-events: ${SQS_QUEUE_SERVICE_ORDER_EVENTS:service-order-events.fifo}
       billing-events: ${SQS_QUEUE_BILLING_EVENTS:billing-events.fifo}
-
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${JWT_ISSUER_URI:https://auth.cargarage.com}
 
 ---
 # Test profile

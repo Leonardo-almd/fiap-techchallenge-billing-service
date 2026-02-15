@@ -28,37 +28,33 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ApproveBudgetUseCase - Unit Tests")
-class ApproveBudgetUseCaseTest {
+@DisplayName("RejectBudgetUseCase - Unit Tests")
+class RejectBudgetUseCaseTest {
 
     @Mock
     private BudgetGateway budgetGateway;
 
-    private ApproveBudgetUseCase useCase;
+    private RejectBudgetUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new ApproveBudgetUseCase(budgetGateway);
+        useCase = new RejectBudgetUseCase(budgetGateway);
     }
 
     @Test
-    @DisplayName("Should approve budget when status is pending")
-    void shouldApproveBudgetWhenStatusIsPending() {
-        // Arrange
+    @DisplayName("Should reject budget when status is pending")
+    void shouldRejectBudgetWhenStatusIsPending() {
         String budgetId = "BUDGET-001";
         Budget pendingBudget = createPendingBudget(budgetId);
 
         when(budgetGateway.findById(budgetId)).thenReturn(Optional.of(pendingBudget));
         when(budgetGateway.update(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act
         Budget result = useCase.execute(budgetId);
 
-        // Assert
         assertThat(result).isNotNull();
-        assertThat(result.status().isApproved()).isTrue();
+        assertThat(result.status().isRejected()).isTrue();
         assertThat(result.updatedAt()).isAfter(pendingBudget.updatedAt());
-
         verify(budgetGateway).findById(budgetId);
         verify(budgetGateway).update(any(Budget.class));
     }
@@ -66,11 +62,9 @@ class ApproveBudgetUseCaseTest {
     @Test
     @DisplayName("Should throw NotFoundException when budget does not exist")
     void shouldThrowNotFoundExceptionWhenBudgetDoesNotExist() {
-        // Arrange
         String budgetId = "NON-EXISTENT";
         when(budgetGateway.findById(budgetId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThatThrownBy(() -> useCase.execute(budgetId))
             .isInstanceOf(NotFoundException.class)
             .hasMessageContaining("Budget not found");
@@ -82,13 +76,10 @@ class ApproveBudgetUseCaseTest {
     @Test
     @DisplayName("Should throw InvalidDataException when budget is already approved")
     void shouldThrowExceptionWhenBudgetIsAlreadyApproved() {
-        // Arrange
         String budgetId = "BUDGET-001";
         Budget approvedBudget = createApprovedBudget(budgetId);
-
         when(budgetGateway.findById(budgetId)).thenReturn(Optional.of(approvedBudget));
 
-        // Act & Assert
         assertThatThrownBy(() -> useCase.execute(budgetId))
             .isInstanceOf(InvalidDataException.class)
             .hasMessageContaining("not pending approval");
@@ -98,15 +89,12 @@ class ApproveBudgetUseCaseTest {
     }
 
     @Test
-    @DisplayName("Should throw InvalidDataException when budget is rejected")
-    void shouldThrowExceptionWhenBudgetIsRejected() {
-        // Arrange
+    @DisplayName("Should throw InvalidDataException when budget is already rejected")
+    void shouldThrowExceptionWhenBudgetIsAlreadyRejected() {
         String budgetId = "BUDGET-001";
         Budget rejectedBudget = createRejectedBudget(budgetId);
-
         when(budgetGateway.findById(budgetId)).thenReturn(Optional.of(rejectedBudget));
 
-        // Act & Assert
         assertThatThrownBy(() -> useCase.execute(budgetId))
             .isInstanceOf(InvalidDataException.class)
             .hasMessageContaining("not pending approval");
@@ -116,91 +104,52 @@ class ApproveBudgetUseCaseTest {
     }
 
     @Test
-    @DisplayName("Should call update gateway with approved budget")
-    void shouldCallUpdateGatewayWithApprovedBudget() {
-        // Arrange
+    @DisplayName("Should call update gateway with rejected budget")
+    void shouldCallUpdateGatewayWithRejectedBudget() {
         String budgetId = "BUDGET-001";
         Budget pendingBudget = createPendingBudget(budgetId);
-
-        ArgumentCaptor<Budget> budgetCaptor = ArgumentCaptor.forClass(Budget.class);
+        ArgumentCaptor<Budget> captor = ArgumentCaptor.forClass(Budget.class);
         when(budgetGateway.findById(budgetId)).thenReturn(Optional.of(pendingBudget));
         when(budgetGateway.update(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act
         useCase.execute(budgetId);
 
-        // Assert
-        verify(budgetGateway).update(budgetCaptor.capture());
-        
-        Budget updatedBudget = budgetCaptor.getValue();
-        assertThat(updatedBudget.status().isApproved()).isTrue();
-        assertThat(updatedBudget.budgetId()).isEqualTo(budgetId);
+        verify(budgetGateway).update(captor.capture());
+        Budget updated = captor.getValue();
+        assertThat(updated.status().isRejected()).isTrue();
+        assertThat(updated.budgetId()).isEqualTo(budgetId);
     }
 
     @Test
-    @DisplayName("Should trigger callback after approval")
-    void shouldTriggerCallbackAfterApproval() {
-        // Arrange
+    @DisplayName("Should trigger callback after rejection")
+    void shouldTriggerCallbackAfterRejection() {
         String budgetId = "BUDGET-001";
         Budget pendingBudget = createPendingBudget(budgetId);
-
         when(budgetGateway.findById(budgetId)).thenReturn(Optional.of(pendingBudget));
         when(budgetGateway.update(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Capture callback argument (avoid mocking Consumer - Mockito limitation on JDK 17+)
-        List<Budget> approvedCaptured = new ArrayList<>();
-        useCase.setOnApprovalCallback(approvedCaptured::add);
+        List<Budget> captured = new ArrayList<>();
+        useCase.setOnRejectionCallback(captured::add);
 
-        // Act
         useCase.execute(budgetId);
 
-        // Assert
-        assertThat(approvedCaptured).hasSize(1);
-        assertThat(approvedCaptured.get(0).budgetId()).isEqualTo(budgetId);
+        assertThat(captured).hasSize(1);
+        assertThat(captured.get(0).budgetId()).isEqualTo(budgetId);
     }
 
     @Test
     @DisplayName("Should not trigger callback if not set")
     void shouldNotTriggerCallbackIfNotSet() {
-        // Arrange
         String budgetId = "BUDGET-001";
         Budget pendingBudget = createPendingBudget(budgetId);
-
         when(budgetGateway.findById(budgetId)).thenReturn(Optional.of(pendingBudget));
         when(budgetGateway.update(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act - No exception should be thrown
         Budget result = useCase.execute(budgetId);
 
-        // Assert
         assertThat(result).isNotNull();
-        assertThat(result.status().isApproved()).isTrue();
+        assertThat(result.status().isRejected()).isTrue();
     }
-
-    @Test
-    @DisplayName("Should preserve all budget data during approval")
-    void shouldPreserveAllBudgetDataDuringApproval() {
-        // Arrange
-        String budgetId = "BUDGET-001";
-        Budget pendingBudget = createPendingBudget(budgetId);
-
-        when(budgetGateway.findById(budgetId)).thenReturn(Optional.of(pendingBudget));
-        when(budgetGateway.update(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Act
-        Budget result = useCase.execute(budgetId);
-
-        // Assert
-        assertThat(result.budgetId()).isEqualTo(pendingBudget.budgetId());
-        assertThat(result.serviceOrderId()).isEqualTo(pendingBudget.serviceOrderId());
-        assertThat(result.customerId()).isEqualTo(pendingBudget.customerId());
-        assertThat(result.vehicleId()).isEqualTo(pendingBudget.vehicleId());
-        assertThat(result.items()).isEqualTo(pendingBudget.items());
-        assertThat(result.totalAmount()).isEqualTo(pendingBudget.totalAmount());
-        assertThat(result.createdAt()).isEqualTo(pendingBudget.createdAt());
-    }
-
-    // Helper methods
 
     private BudgetItem defaultBudgetItem() {
         return new BudgetItem("item-1", BudgetItemType.SERVICE, "SVC-001", "Test item", 1,

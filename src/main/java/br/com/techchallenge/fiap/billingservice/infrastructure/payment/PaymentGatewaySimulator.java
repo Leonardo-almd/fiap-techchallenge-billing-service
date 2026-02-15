@@ -18,9 +18,24 @@ import java.util.UUID;
 public class PaymentGatewaySimulator {
 
     private final Random random = new Random();
-    
+    private final int minDelayMs;
+    private final int maxDelayMs;
+
     // Configurable success rate (90% by default)
     private static final int SUCCESS_RATE = 90;
+
+    /** Default constructor for Spring: 2–5 s delay. */
+    public PaymentGatewaySimulator() {
+        this(2000, 5000);
+    }
+
+    /**
+     * Constructor for tests: set minDelayMs and maxDelayMs to 0 to disable delay.
+     */
+    public PaymentGatewaySimulator(int minDelayMs, int maxDelayMs) {
+        this.minDelayMs = minDelayMs;
+        this.maxDelayMs = maxDelayMs;
+    }
 
     /**
      * Simulates payment processing.
@@ -28,7 +43,7 @@ public class PaymentGatewaySimulator {
      * Simulation rules:
      * - 90% success rate
      * - 10% failure rate
-     * - 2-5 seconds delay to simulate processing
+     * - Configurable delay (default 2-5 seconds; use 0,0 in tests for no delay)
      * 
      * @param request Payment request
      * @return Payment result with success/failure
@@ -38,9 +53,12 @@ public class PaymentGatewaySimulator {
                  request.amount(), request.method());
 
         try {
-            // Simulate processing delay (2-5 seconds)
-            int delayMs = random.nextInt(3000) + 2000;
-            Thread.sleep(delayMs);
+            int delayMs = 0;
+            if (maxDelayMs > 0) {
+                int range = Math.max(0, maxDelayMs - minDelayMs);
+                delayMs = minDelayMs + (range > 0 ? random.nextInt(range) : 0);
+                Thread.sleep(delayMs);
+            }
 
             // Simulate approval (90% chance)
             boolean approved = random.nextInt(100) < SUCCESS_RATE;

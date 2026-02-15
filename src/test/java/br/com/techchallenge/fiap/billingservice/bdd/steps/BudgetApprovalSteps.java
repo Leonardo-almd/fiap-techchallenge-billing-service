@@ -1,7 +1,10 @@
 package br.com.techchallenge.fiap.billingservice.bdd.steps;
 
 import br.com.techchallenge.fiap.billingservice.application.entity.Budget;
+import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItem;
+import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItemType;
 import br.com.techchallenge.fiap.billingservice.application.entity.BudgetStatus;
+import br.com.techchallenge.fiap.billingservice.application.entity.Price;
 import br.com.techchallenge.fiap.billingservice.application.exception.InvalidDataException;
 import br.com.techchallenge.fiap.billingservice.application.exception.NotFoundException;
 import br.com.techchallenge.fiap.billingservice.application.gateway.BudgetGateway;
@@ -12,10 +15,12 @@ import io.cucumber.java.pt.Quando;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -45,12 +50,14 @@ public class BudgetApprovalSteps {
             default -> throw new IllegalArgumentException("Unknown status: " + status);
         };
 
+        BudgetItem oneItem = new BudgetItem("item-1", BudgetItemType.SERVICE, "SVC-001", "Test item", 1,
+            new Price(new BigDecimal("100.00")), new Price(new BigDecimal("100.00")));
         testBudget = Budget.builder()
             .budgetId(testBudgetId)
             .serviceOrderId("ORDER-001")
             .customerId("CUST-001")
             .vehicleId("VEH-001")
-            .items(List.of())
+            .items(List.of(oneItem))
             .totalAmount(new BigDecimal("100.00"))
             .status(budgetStatus)
             .createdAt(LocalDateTime.now().minusHours(1))
@@ -105,7 +112,7 @@ public class BudgetApprovalSteps {
     public void aDataDeAtualizacaoDeveSerRecente() {
         assertThat(resultBudget.updatedAt())
             .isAfter(testBudget.updatedAt())
-            .isCloseTo(LocalDateTime.now(), org.assertj.core.data.TemporalUnitWithinOffset.within(5, java.time.temporal.ChronoUnit.SECONDS));
+            .isCloseTo(LocalDateTime.now(), within(5, ChronoUnit.SECONDS));
     }
 
     @Então("devo receber um erro de {string}")

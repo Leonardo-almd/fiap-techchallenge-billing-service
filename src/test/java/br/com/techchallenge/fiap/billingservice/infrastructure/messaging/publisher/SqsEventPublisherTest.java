@@ -11,7 +11,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
@@ -30,7 +29,7 @@ import static org.mockito.Mockito.*;
 class SqsEventPublisherTest {
 
     @Mock
-    private SqsClient sqsClient;
+    private SqsOperations sqsOperations;
 
     private ObjectMapper objectMapper;
     private SqsEventPublisher publisher;
@@ -39,7 +38,7 @@ class SqsEventPublisherTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
-        publisher = new SqsEventPublisher(sqsClient, objectMapper);
+        publisher = new SqsEventPublisher(sqsOperations, objectMapper);
         ReflectionTestUtils.setField(publisher, "billingEventsQueueName", "billing-events");
     }
 
@@ -49,12 +48,12 @@ class SqsEventPublisherTest {
         // Arrange
         BudgetApprovedEvent event = createBudgetApprovedEvent();
         
-        when(sqsClient.getQueueUrl(any(GetQueueUrlRequest.class)))
+        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
             .thenReturn(GetQueueUrlResponse.builder()
                 .queueUrl("http://localhost:4566/000000000000/billing-events")
                 .build());
         
-        when(sqsClient.sendMessage(any(SendMessageRequest.class)))
+        when(sqsOperations.sendMessage(any(SendMessageRequest.class)))
             .thenReturn(SendMessageResponse.builder()
                 .messageId("MSG-001")
                 .build());
@@ -63,8 +62,8 @@ class SqsEventPublisherTest {
         publisher.publishEvent(event);
 
         // Assert
-        verify(sqsClient).getQueueUrl(any(GetQueueUrlRequest.class));
-        verify(sqsClient).sendMessage(any(SendMessageRequest.class));
+        verify(sqsOperations).getQueueUrl(any(GetQueueUrlRequest.class));
+        verify(sqsOperations).sendMessage(any(SendMessageRequest.class));
     }
 
     @Test
@@ -74,19 +73,19 @@ class SqsEventPublisherTest {
         BudgetApprovedEvent event = createBudgetApprovedEvent();
         ArgumentCaptor<SendMessageRequest> captor = ArgumentCaptor.forClass(SendMessageRequest.class);
         
-        when(sqsClient.getQueueUrl(any(GetQueueUrlRequest.class)))
+        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
             .thenReturn(GetQueueUrlResponse.builder()
                 .queueUrl("http://localhost:4566/queue")
                 .build());
         
-        when(sqsClient.sendMessage(any(SendMessageRequest.class)))
+        when(sqsOperations.sendMessage(any(SendMessageRequest.class)))
             .thenReturn(SendMessageResponse.builder().messageId("MSG-001").build());
 
         // Act
         publisher.publishEvent(event);
 
         // Assert
-        verify(sqsClient).sendMessage(captor.capture());
+        verify(sqsOperations).sendMessage(captor.capture());
         SendMessageRequest request = captor.getValue();
         
         assertThat(request.messageBody()).contains("budgetId");
@@ -100,19 +99,19 @@ class SqsEventPublisherTest {
         BudgetApprovedEvent event = createBudgetApprovedEvent();
         ArgumentCaptor<SendMessageRequest> captor = ArgumentCaptor.forClass(SendMessageRequest.class);
         
-        when(sqsClient.getQueueUrl(any(GetQueueUrlRequest.class)))
+        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
             .thenReturn(GetQueueUrlResponse.builder()
                 .queueUrl("http://localhost:4566/queue")
                 .build());
         
-        when(sqsClient.sendMessage(any(SendMessageRequest.class)))
+        when(sqsOperations.sendMessage(any(SendMessageRequest.class)))
             .thenReturn(SendMessageResponse.builder().messageId("MSG-001").build());
 
         // Act
         publisher.publishEvent(event);
 
         // Assert
-        verify(sqsClient).sendMessage(captor.capture());
+        verify(sqsOperations).sendMessage(captor.capture());
         SendMessageRequest request = captor.getValue();
         
         assertThat(request.messageGroupId()).isEqualTo("BudgetApprovedEvent");
@@ -125,19 +124,19 @@ class SqsEventPublisherTest {
         BudgetApprovedEvent event = createBudgetApprovedEvent();
         ArgumentCaptor<SendMessageRequest> captor = ArgumentCaptor.forClass(SendMessageRequest.class);
         
-        when(sqsClient.getQueueUrl(any(GetQueueUrlRequest.class)))
+        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
             .thenReturn(GetQueueUrlResponse.builder()
                 .queueUrl("http://localhost:4566/queue")
                 .build());
         
-        when(sqsClient.sendMessage(any(SendMessageRequest.class)))
+        when(sqsOperations.sendMessage(any(SendMessageRequest.class)))
             .thenReturn(SendMessageResponse.builder().messageId("MSG-001").build());
 
         // Act
         publisher.publishEvent(event);
 
         // Assert
-        verify(sqsClient).sendMessage(captor.capture());
+        verify(sqsOperations).sendMessage(captor.capture());
         SendMessageRequest request = captor.getValue();
         
         assertThat(request.messageDeduplicationId()).isNotNull();
@@ -150,7 +149,7 @@ class SqsEventPublisherTest {
         // Arrange
         BudgetApprovedEvent event = createBudgetApprovedEvent();
         
-        when(sqsClient.getQueueUrl(any(GetQueueUrlRequest.class)))
+        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
             .thenThrow(new RuntimeException("SQS error"));
 
         // Act & Assert

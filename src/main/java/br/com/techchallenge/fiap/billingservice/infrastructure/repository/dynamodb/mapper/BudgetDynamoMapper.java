@@ -48,7 +48,7 @@ public class BudgetDynamoMapper {
             .vehicleId(budget.vehicleId())
             .items(itemModels)
             .totalAmount(budget.totalAmount().value())
-            .statusCode(budget.status().code())
+            .statusCode(budget.status().name())
             .statusName(budget.status().name())
             .createdAt(budget.createdAt())
             .updatedAt(budget.updatedAt())
@@ -78,7 +78,7 @@ public class BudgetDynamoMapper {
             .map(this::toBudgetItemDomain)
             .collect(Collectors.toList());
 
-        BudgetStatus status = BudgetStatusEnum.fromCode(model.statusCode()).toEntity();
+        BudgetStatus status = new BudgetStatus(BudgetStatusEnum.valueOf(model.statusCode()));
 
         return Budget.builder()
             .budgetId(model.budgetId())
@@ -86,7 +86,7 @@ public class BudgetDynamoMapper {
             .customerId(model.customerId())
             .vehicleId(model.vehicleId())
             .items(items)
-            .totalAmount(new Price(model.totalAmount()))
+            .totalAmount(model.totalAmount())
             .status(status)
             .createdAt(model.createdAt())
             .updatedAt(model.updatedAt())

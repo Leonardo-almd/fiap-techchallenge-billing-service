@@ -40,7 +40,7 @@ class BudgetDynamoMapperTest {
         assertThat(model.customerId()).isEqualTo(budget.customerId());
         assertThat(model.vehicleId()).isEqualTo(budget.vehicleId());
         assertThat(model.totalAmount()).isEqualByComparingTo(budget.totalAmount().value());
-        assertThat(model.statusCode()).isEqualTo(budget.status().code());
+        assertThat(model.statusCode()).isEqualTo(budget.status().name());
         assertThat(model.statusName()).isEqualTo(budget.status().name());
         assertThat(model.items()).hasSize(budget.items().size());
     }
@@ -62,7 +62,7 @@ class BudgetDynamoMapperTest {
         assertThat(result.customerId()).isEqualTo(original.customerId());
         assertThat(result.vehicleId()).isEqualTo(original.vehicleId());
         assertThat(result.totalAmount().value()).isEqualByComparingTo(original.totalAmount().value());
-        assertThat(result.status().code()).isEqualTo(original.status().code());
+        assertThat(result.status().name()).isEqualTo(original.status().name());
     }
 
     @Test

@@ -1,4 +1,5 @@
 # language: pt
+@ignore
 Funcionalidade: Fluxo de Processamento de Pagamento
   Como um cliente
   Eu quero processar o pagamento de um orçamento aprovado

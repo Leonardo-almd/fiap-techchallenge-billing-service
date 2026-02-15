@@ -108,8 +108,9 @@ PaymentProcessedEvent  PaymentFailedEvent
 
 ### Pré-requisitos
 
-- Java 21+
+- **Java 21** (LTS) — mesmo que em produção; evite Java 22+ para rodar testes (Mockito/ByteBuddy).
 - Maven 3.9+ (ou use `./mvnw`)
+- Se usar [SDKMAN](https://sdkman.io): `sdk env` na raiz do projeto usa a versão definida em `.sdkmanrc`.
 - Docker & Docker Compose
 - AWS CLI (para produção)
 
@@ -135,8 +136,24 @@ open http://localhost:8080/api/v1/swagger-ui/index.html
 
 ### Executar Testes
 
+Para **reproduzir localmente o mesmo passo "Run Unit Tests" do CI** (evitar depender só da pipeline):
+
 ```bash
-# Todos os testes (104 testes unitários)
+# Opção 1: script (usa mvn ou ./mvnw automaticamente)
+./run-tests.sh
+
+# Opção 2: comando direto (requer Maven no PATH)
+mvn test -B
+# ou com wrapper, se existir:
+./mvnw test -B
+```
+
+**Requisito:** Maven instalado (`brew install maven` no macOS) ou Maven Wrapper no projeto (`mvn wrapper:wrapper` gera `mvnw`).
+
+Outros comandos úteis:
+
+```bash
+# Todos os testes (unitários + BDD)
 ./mvnw clean test
 
 # Testes BDD (15 cenários Cucumber)

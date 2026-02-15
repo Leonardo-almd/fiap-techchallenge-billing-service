@@ -14,7 +14,7 @@ import org.junit.platform.suite.api.Suite;
 @IncludeEngines("cucumber")
 @SelectClasspathResource("features")
 @ConfigurationParameter(key = Constants.PLUGIN_PROPERTY_NAME, value = "pretty, html:target/cucumber-reports/cucumber.html, json:target/cucumber-reports/cucumber.json")
-@ConfigurationParameter(key = Constants.GLUE_PROPERTY_NAME, value = "br.com.techchallenge.fiap.billingservice.bdd.steps")
+@ConfigurationParameter(key = Constants.GLUE_PROPERTY_NAME, value = "br.com.techchallenge.fiap.billingservice.bdd")
 @ConfigurationParameter(key = Constants.FILTER_TAGS_PROPERTY_NAME, value = "not @ignore")
 public class CucumberTest {
 }

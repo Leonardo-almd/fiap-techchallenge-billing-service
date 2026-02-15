@@ -250,13 +250,18 @@ class ProcessPaymentUseCaseTest {
         return createApprovedBudget(budgetId, new BigDecimal("250.00"));
     }
 
+    private BudgetItem defaultBudgetItem(BigDecimal total) {
+        return new BudgetItem("item-1", BudgetItemType.SERVICE, "SVC-001", "Test item", 1,
+            new Price(total), new Price(total));
+    }
+
     private Budget createApprovedBudget(String budgetId, BigDecimal amount) {
         return Budget.builder()
             .budgetId(budgetId)
             .serviceOrderId("ORDER-001")
             .customerId("CUST-001")
             .vehicleId("VEH-001")
-            .items(List.of())
+            .items(List.of(defaultBudgetItem(amount)))
             .totalAmount(amount)
             .status(BudgetStatus.approved())
             .createdAt(LocalDateTime.now().minusHours(1))
@@ -270,7 +275,7 @@ class ProcessPaymentUseCaseTest {
             .serviceOrderId("ORDER-001")
             .customerId("CUST-001")
             .vehicleId("VEH-001")
-            .items(List.of())
+            .items(List.of(defaultBudgetItem(new BigDecimal("250.00"))))
             .totalAmount(new BigDecimal("250.00"))
             .status(BudgetStatus.pendingApproval())
             .createdAt(LocalDateTime.now().minusHours(1))

@@ -113,29 +113,31 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+      - name: Run Trivy vulnerability scanner (fs)
+        id: trivy
+        uses: aquasecurity/trivy-action@master
         with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: maven
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH'
 
-      - name: OWASP Dependency Check
-        id: owasp
-        run: mvn org.owasp:dependency-check-maven:check -B
+      - name: Upload Trivy SARIF (GitHub Security tab)
+        if: always() && steps.trivy.outcome != 'skipped'
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: 'trivy-fs'
         continue-on-error: true
-
-      - name: Upload Security Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-report
-          path: target/dependency-check-report.html
-          retention-days: 7
 
       - name: Security Summary
         if: always()
@@ -145,13 +147,14 @@ jobs:
             echo
             echo "| Etapa | Resultado |"
             echo "|---|---|"
-            echo "| OWASP Dependency Check | ${{ steps.owasp.outcome }} |"
+            echo "| Trivy (filesystem / deps) | ${{ steps.trivy.outcome }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   sonarcloud:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     needs: build
+    if: vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != ''
 
     steps:
       - name: Checkout code
@@ -167,7 +170,7 @@ jobs:
           cache: maven
 
       - name: Build and Run Tests with Coverage
-        run: mvn clean verify jacoco:report -B
+        run: mvn clean verify jacoco:report -Djacoco.agent.skip=false -B
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
@@ -176,6 +179,8 @@ jobs:
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.java.binaries=target/classes
+            -Dsonar.java.test.binaries=target/test-classes
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -199,7 +204,7 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: [build, code-quality, sonarcloud]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && (needs.sonarcloud.result == 'success' || needs.sonarcloud.result == 'skipped')
 
     steps:
       - name: Checkout code

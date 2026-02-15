@@ -2,6 +2,7 @@ package br.com.techchallenge.fiap.billingservice.infrastructure.controller;
 
 import br.com.techchallenge.fiap.billingservice.application.controller.BudgetCleanArchController;
 import br.com.techchallenge.fiap.billingservice.application.dto.BudgetDto;
+import br.com.techchallenge.fiap.billingservice.application.dto.BudgetItemDto;
 import br.com.techchallenge.fiap.billingservice.application.dto.BudgetItemRequestDto;
 import br.com.techchallenge.fiap.billingservice.application.dto.BudgetRequestDto;
 import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItemType;
@@ -9,9 +10,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -25,6 +28,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(BudgetController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 @DisplayName("BudgetController - REST API Tests")
 class BudgetControllerTest {
 
@@ -128,11 +133,13 @@ class BudgetControllerTest {
             "ORDER-001",
             "CUST-001",
             "VEH-001",
-            List.of(),
+            List.<BudgetItemDto>of(),
             new BigDecimal("100.00"),
             "PENDING_APPROVAL",
             LocalDateTime.now(),
-            LocalDateTime.now()
+            LocalDateTime.now(),
+            null,
+            null
         );
     }
 
@@ -142,11 +149,13 @@ class BudgetControllerTest {
             "ORDER-001",
             "CUST-001",
             "VEH-001",
-            List.of(),
+            List.<BudgetItemDto>of(),
             new BigDecimal("100.00"),
             "APPROVED",
             LocalDateTime.now().minusHours(1),
-            LocalDateTime.now()
+            LocalDateTime.now(),
+            LocalDateTime.now(),
+            null
         );
     }
 
@@ -156,10 +165,12 @@ class BudgetControllerTest {
             "ORDER-001",
             "CUST-001",
             "VEH-001",
-            List.of(),
+            List.<BudgetItemDto>of(),
             new BigDecimal("100.00"),
             "REJECTED",
             LocalDateTime.now().minusHours(1),
+            LocalDateTime.now(),
+            null,
             LocalDateTime.now()
         );
     }
