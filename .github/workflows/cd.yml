@@ -192,6 +192,7 @@ jobs:
           echo "Kubernetes manifests prepared successfully"
 
       - name: Deploy to Kubernetes
+        id: deploy
         run: |
           kubectl apply -f k8s/namespace.yaml
           kubectl apply -f k8s/service-account.yaml
@@ -201,7 +202,24 @@ jobs:
           kubectl apply -f k8s/app-service.yaml
           kubectl apply -f k8s/hpa.yaml
 
-          kubectl rollout status deployment/billing-service -n billing-service --timeout=300s
+          kubectl rollout status deployment/billing-service -n billing-service --timeout=600s
+
+      - name: Diagnose rollout failure
+        if: failure() && steps.deploy.outcome == 'failure'
+        run: |
+          echo "## Rollout diagnosis (billing-service)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pods" >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -n billing-service -l app=billing-service -o wide 2>/dev/null | tee -a $GITHUB_STEP_SUMMARY || true
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pod describe (first pod)" >> $GITHUB_STEP_SUMMARY
+          POD=$(kubectl get pods -n billing-service -l app=billing-service -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          if [[ -n "$POD" ]]; then
+            kubectl describe pod "$POD" -n billing-service 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Events (billing-service namespace)" >> $GITHUB_STEP_SUMMARY
+          kubectl get events -n billing-service --sort-by='.lastTimestamp' 2>/dev/null | tail -50 >> $GITHUB_STEP_SUMMARY || true
 
       - name: Get deployment info
         id: deployment-info
