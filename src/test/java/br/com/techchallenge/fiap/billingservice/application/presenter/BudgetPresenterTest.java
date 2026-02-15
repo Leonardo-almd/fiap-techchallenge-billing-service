@@ -2,7 +2,10 @@ package br.com.techchallenge.fiap.billingservice.application.presenter;
 
 import br.com.techchallenge.fiap.billingservice.application.dto.BudgetDto;
 import br.com.techchallenge.fiap.billingservice.application.entity.Budget;
+import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItem;
+import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItemType;
 import br.com.techchallenge.fiap.billingservice.application.entity.BudgetStatus;
+import br.com.techchallenge.fiap.billingservice.application.entity.Price;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -75,13 +78,18 @@ class BudgetPresenterTest {
         return createBudget("BUDGET-001");
     }
 
+    private BudgetItem defaultBudgetItem() {
+        return new BudgetItem("item-1", BudgetItemType.SERVICE, "SVC-001", "Test item", 1,
+            new Price(new BigDecimal("100.00")), new Price(new BigDecimal("100.00")));
+    }
+
     private Budget createBudget(String budgetId) {
         return Budget.builder()
             .budgetId(budgetId)
             .serviceOrderId("ORDER-001")
             .customerId("CUST-001")
             .vehicleId("VEH-001")
-            .items(List.of())
+            .items(List.of(defaultBudgetItem()))
             .totalAmount(new BigDecimal("100.00"))
             .status(BudgetStatus.pendingApproval())
             .createdAt(LocalDateTime.now())

@@ -8,20 +8,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 /**
  * SQS event publisher for publishing domain events.
+ * Uses SqsOperations (port) so tests can mock without AWS SDK types.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SqsEventPublisher {
 
-    private final SqsClient sqsClient;
+    private final SqsOperations sqsOperations;
     private final ObjectMapper objectMapper;
 
     @Value("${aws.sqs.queues.billing-events}")
@@ -45,7 +45,7 @@ public class SqsEventPublisher {
                 .messageDeduplicationId(java.util.UUID.randomUUID().toString())
                 .build();
 
-            SendMessageResponse response = sqsClient.sendMessage(request);
+            SendMessageResponse response = sqsOperations.sendMessage(request);
 
             log.info("✅ Event published successfully - MessageId: {}", response.messageId());
 
@@ -66,6 +66,6 @@ public class SqsEventPublisher {
             .queueName(queueName)
             .build();
         
-        return sqsClient.getQueueUrl(request).queueUrl();
+        return sqsOperations.getQueueUrl(request).queueUrl();
     }
 }

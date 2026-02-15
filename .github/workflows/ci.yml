@@ -167,7 +167,7 @@ jobs:
           cache: maven
 
       - name: Build and Run Tests with Coverage
-        run: mvn clean verify jacoco:report -B
+        run: mvn clean verify jacoco:report -Djacoco.agent.skip=false -B
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master

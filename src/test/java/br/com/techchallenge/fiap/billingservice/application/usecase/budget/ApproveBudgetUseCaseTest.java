@@ -1,7 +1,10 @@
 package br.com.techchallenge.fiap.billingservice.application.usecase.budget;
 
 import br.com.techchallenge.fiap.billingservice.application.entity.Budget;
+import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItem;
+import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItemType;
 import br.com.techchallenge.fiap.billingservice.application.entity.BudgetStatus;
+import br.com.techchallenge.fiap.billingservice.application.entity.Price;
 import br.com.techchallenge.fiap.billingservice.application.exception.InvalidDataException;
 import br.com.techchallenge.fiap.billingservice.application.exception.NotFoundException;
 import br.com.techchallenge.fiap.billingservice.application.gateway.BudgetGateway;
@@ -15,9 +18,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -144,16 +147,16 @@ class ApproveBudgetUseCaseTest {
         when(budgetGateway.findById(budgetId)).thenReturn(Optional.of(pendingBudget));
         when(budgetGateway.update(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Mock callback
-        @SuppressWarnings("unchecked")
-        Consumer<Budget> mockCallback = mock(Consumer.class);
-        useCase.setOnApprovalCallback(mockCallback);
+        // Capture callback argument (avoid mocking Consumer - Mockito limitation on JDK 17+)
+        List<Budget> approvedCaptured = new ArrayList<>();
+        useCase.setOnApprovalCallback(approvedCaptured::add);
 
         // Act
         useCase.execute(budgetId);
 
         // Assert
-        verify(mockCallback).accept(any(Budget.class));
+        assertThat(approvedCaptured).hasSize(1);
+        assertThat(approvedCaptured.get(0).budgetId()).isEqualTo(budgetId);
     }
 
     @Test
@@ -199,13 +202,18 @@ class ApproveBudgetUseCaseTest {
 
     // Helper methods
 
+    private BudgetItem defaultBudgetItem() {
+        return new BudgetItem("item-1", BudgetItemType.SERVICE, "SVC-001", "Test item", 1,
+            new Price(new BigDecimal("100.00")), new Price(new BigDecimal("100.00")));
+    }
+
     private Budget createPendingBudget(String budgetId) {
         return Budget.builder()
             .budgetId(budgetId)
             .serviceOrderId("ORDER-001")
             .customerId("CUST-001")
             .vehicleId("VEH-001")
-            .items(List.of())
+            .items(List.of(defaultBudgetItem()))
             .totalAmount(new BigDecimal("100.00"))
             .status(BudgetStatus.pendingApproval())
             .createdAt(LocalDateTime.now().minusHours(1))
@@ -219,7 +227,7 @@ class ApproveBudgetUseCaseTest {
             .serviceOrderId("ORDER-001")
             .customerId("CUST-001")
             .vehicleId("VEH-001")
-            .items(List.of())
+            .items(List.of(defaultBudgetItem()))
             .totalAmount(new BigDecimal("100.00"))
             .status(BudgetStatus.approved())
             .createdAt(LocalDateTime.now().minusHours(1))
@@ -233,7 +241,7 @@ class ApproveBudgetUseCaseTest {
             .serviceOrderId("ORDER-001")
             .customerId("CUST-001")
             .vehicleId("VEH-001")
-            .items(List.of())
+            .items(List.of(defaultBudgetItem()))
             .totalAmount(new BigDecimal("100.00"))
             .status(BudgetStatus.rejected())
             .createdAt(LocalDateTime.now().minusHours(1))

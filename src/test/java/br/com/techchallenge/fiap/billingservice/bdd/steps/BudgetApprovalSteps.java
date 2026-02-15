@@ -1,7 +1,10 @@
 package br.com.techchallenge.fiap.billingservice.bdd.steps;
 
 import br.com.techchallenge.fiap.billingservice.application.entity.Budget;
+import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItem;
+import br.com.techchallenge.fiap.billingservice.application.entity.BudgetItemType;
 import br.com.techchallenge.fiap.billingservice.application.entity.BudgetStatus;
+import br.com.techchallenge.fiap.billingservice.application.entity.Price;
 import br.com.techchallenge.fiap.billingservice.application.exception.InvalidDataException;
 import br.com.techchallenge.fiap.billingservice.application.exception.NotFoundException;
 import br.com.techchallenge.fiap.billingservice.application.gateway.BudgetGateway;
@@ -47,12 +50,14 @@ public class BudgetApprovalSteps {
             default -> throw new IllegalArgumentException("Unknown status: " + status);
         };
 
+        BudgetItem oneItem = new BudgetItem("item-1", BudgetItemType.SERVICE, "SVC-001", "Test item", 1,
+            new Price(new BigDecimal("100.00")), new Price(new BigDecimal("100.00")));
         testBudget = Budget.builder()
             .budgetId(testBudgetId)
             .serviceOrderId("ORDER-001")
             .customerId("CUST-001")
             .vehicleId("VEH-001")
-            .items(List.of())
+            .items(List.of(oneItem))
             .totalAmount(new BigDecimal("100.00"))
             .status(budgetStatus)
             .createdAt(LocalDateTime.now().minusHours(1))
