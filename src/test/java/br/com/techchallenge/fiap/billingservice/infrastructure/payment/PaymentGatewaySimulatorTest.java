@@ -160,8 +160,8 @@ class PaymentGatewaySimulatorTest {
     @RepeatedTest(3)
     @DisplayName("Should have approximately 90% success rate")
     void shouldHaveApproximately90PercentSuccessRate() {
-        // Fewer attempts so CI finishes in reasonable time (simulator uses 0 delay in setUp)
-        int totalAttempts = 20;
+        // Enough attempts to reduce variance (simulator uses 0 delay in setUp; 90% theoretical rate)
+        int totalAttempts = 100;
         int successCount = 0;
 
         PaymentGatewaySimulator.PaymentRequest request = PaymentGatewaySimulator.PaymentRequest.builder()
@@ -177,6 +177,7 @@ class PaymentGatewaySimulatorTest {
         }
 
         double successRate = (double) successCount / totalAttempts * 100;
+        // With n=100 and p=0.9, ~95% of runs fall in ~82–98%; allow 75–100% for CI stability
         assertThat(successRate).isBetween(75.0, 100.0);
     }
 
