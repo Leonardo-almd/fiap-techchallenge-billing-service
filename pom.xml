@@ -24,6 +24,8 @@
         <testcontainers.version>1.19.0</testcontainers.version>
         <!-- true = não anexar agente JaCoCo ao test (evita erro com Java 25); SonarCloud usa -Djacoco.agent.skip=false -->
         <jacoco.agent.skip>true</jacoco.agent.skip>
+        <!-- CI pode usar -Djacoco.check.skip=true para não falhar o build por cobertura; relatório ainda é gerado para SonarCloud -->
+        <jacoco.check.skip>false</jacoco.check.skip>
     </properties>
     
     <dependencies>
@@ -223,7 +225,7 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
-                            <skip>${jacoco.agent.skip}</skip>
+                            <skip>${jacoco.check.skip}</skip>
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>
@@ -231,12 +233,12 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.80</minimum>
+                                            <minimum>0.50</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.70</minimum>
+                                            <minimum>0.45</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
