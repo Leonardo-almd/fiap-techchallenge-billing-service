@@ -1,0 +1,80 @@
+# Destroy pipeline: remove Kubernetes resources deployed by the CD (billing-service namespace).
+# Run manually after tests. Does NOT destroy Terraform Cloud / AWS infra (EKS, ECR, DynamoDB, SQS).
+
+name: Destroy (Billing Service on EKS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'destroy' to confirm removal of billing-service from the cluster"
+        required: true
+        type: string
+        default: ""
+
+env:
+  AWS_REGION: us-east-1
+  EKS_CLUSTER_NAME: cargarage-eks-prod
+  NAMESPACE: billing-service
+
+jobs:
+  destroy:
+    name: Destroy Billing Service (Kubernetes)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require confirmation
+        run: |
+          if [[ "${{ github.event.inputs.confirm }}" != "destroy" ]]; then
+            echo "::error::You must type exactly 'destroy' in the confirm input to run this workflow."
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      - name: Check if namespace exists
+        id: check-ns
+        run: |
+          if kubectl get namespace ${{ env.NAMESPACE }} --request-timeout=5s 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Delete namespace and all resources
+        if: steps.check-ns.outputs.exists == 'true'
+        run: |
+          kubectl delete namespace ${{ env.NAMESPACE }} --timeout=120s --wait=true || true
+          echo "Namespace ${{ env.NAMESPACE }} deletion requested (resources may take a short time to terminate)."
+
+      - name: No namespace to delete
+        if: steps.check-ns.outputs.exists == 'false'
+        run: |
+          echo "Namespace ${{ env.NAMESPACE }} does not exist. Nothing to destroy."
+
+      - name: Destroy summary
+        if: always()
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## Destroy Summary
+
+          | Item | Value |
+          |------|-------|
+          | **Namespace** | \`${{ env.NAMESPACE }}\` |
+          | **Cluster** | \`${{ env.EKS_CLUSTER_NAME }}\` |
+          | **Namespace existed** | ${{ steps.check-ns.outputs.exists }} |
+
+          *This workflow only removes Kubernetes resources in the cluster. It does NOT delete ECR images, Terraform Cloud state, or AWS infra (DynamoDB, SQS, EKS).*
+          EOF
