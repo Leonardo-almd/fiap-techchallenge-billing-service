@@ -94,6 +94,10 @@ jacoco.exec
 .sonar/
 .scannerwork/
 
+# CD rollout diagnosis artifact (downloaded from Actions)
+_rollout-diagnosis/
+rollout-diagnosis/
+
 # Terraform
 terraform/.terraform/
 terraform/*.tfstate
