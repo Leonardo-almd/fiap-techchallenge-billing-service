@@ -4,10 +4,12 @@ import br.com.techchallenge.fiap.billingservice.application.entity.Budget;
 import br.com.techchallenge.fiap.billingservice.application.entity.Payment;
 import br.com.techchallenge.fiap.billingservice.application.entity.PaymentStatus;
 import br.com.techchallenge.fiap.billingservice.application.gateway.BudgetGateway;
+import br.com.techchallenge.fiap.billingservice.application.gateway.ExternalPaymentProvider;
 import br.com.techchallenge.fiap.billingservice.application.gateway.PaymentGateway;
+import br.com.techchallenge.fiap.billingservice.application.gateway.PaymentProviderRequest;
+import br.com.techchallenge.fiap.billingservice.application.gateway.PaymentProviderResult;
 import br.com.techchallenge.fiap.billingservice.infrastructure.messaging.event.*;
 import br.com.techchallenge.fiap.billingservice.infrastructure.messaging.publisher.SqsEventPublisher;
-import br.com.techchallenge.fiap.billingservice.infrastructure.payment.PaymentGatewaySimulator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,7 +21,7 @@ import java.util.UUID;
 
 /**
  * Orchestrator for processing pending payments.
- * This service polls for PROCESSING payments and simulates payment with the gateway.
+ * Polls for PROCESSING payments and processes them via the configured provider (Mercado Pago or simulator).
  * Part of the Saga choreography pattern.
  */
 @Service
@@ -29,7 +31,7 @@ public class PaymentProcessingOrchestrator {
 
     private final PaymentGateway paymentGateway;
     private final BudgetGateway budgetGateway;
-    private final PaymentGatewaySimulator paymentGatewaySimulator;
+    private final ExternalPaymentProvider externalPaymentProvider;
     private final SqsEventPublisher eventPublisher;
 
     /**
@@ -65,19 +67,20 @@ public class PaymentProcessingOrchestrator {
     }
 
     /**
-     * Process a single payment using the payment gateway simulator.
+     * Process a single payment using the configured provider (Mercado Pago or simulator).
      */
     private void processPayment(Payment payment) {
         try {
             log.info("💳 Processing payment: {}", payment.paymentId());
 
-            // Call payment gateway simulator
-            PaymentGatewaySimulator.PaymentRequest request = PaymentGatewaySimulator.PaymentRequest.builder()
-                .amount(payment.amount().value())
-                .method(payment.method())
-                .build();
+            PaymentProviderRequest request = PaymentProviderRequest.builder()
+                    .amount(payment.amount().value())
+                    .method(payment.method())
+                    .description("Orçamento OS " + payment.serviceOrderId())
+                    .externalReference(payment.paymentId())
+                    .build();
 
-            PaymentGatewaySimulator.PaymentResult result = paymentGatewaySimulator.processPayment(request);
+            PaymentProviderResult result = externalPaymentProvider.processPayment(request);
 
             if (result.success()) {
                 handlePaymentSuccess(payment, result);
@@ -93,15 +96,15 @@ public class PaymentProcessingOrchestrator {
     /**
      * Handle successful payment.
      */
-    private void handlePaymentSuccess(Payment payment, PaymentGatewaySimulator.PaymentResult result) {
+    private void handlePaymentSuccess(Payment payment, PaymentProviderResult result) {
         log.info("✅ Payment successful: {}", payment.paymentId());
 
         LocalDateTime now = LocalDateTime.now();
 
         // Update payment to PAID
         Payment paidPayment = payment.withStatusUpdated(PaymentStatus.paid(), now)
-            .withExternalId(result.externalId())
-            .withAuthorizationCode(result.authorizationCode());
+                .withExternalId(result.externalId())
+                .withAuthorizationCode(result.authorizationCode());
 
         paymentGateway.update(paidPayment);
 
@@ -127,7 +130,7 @@ public class PaymentProcessingOrchestrator {
     /**
      * Handle payment failure.
      */
-    private void handlePaymentFailure(Payment payment, PaymentGatewaySimulator.PaymentResult result) {
+    private void handlePaymentFailure(Payment payment, PaymentProviderResult result) {
         log.warn("❌ Payment failed: {} - Reason: {}", payment.paymentId(), result.failureReason());
 
         LocalDateTime now = LocalDateTime.now();

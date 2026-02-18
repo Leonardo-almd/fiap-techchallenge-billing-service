@@ -149,18 +149,29 @@ jobs:
           aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
 
       - name: Create secrets manifest from template
+        env:
+          MERCADOPAGO_ACCESS_TOKEN: ${{ secrets.MERCADOPAGO_ACCESS_TOKEN }}
         run: |
           # k8s/secrets.yaml is gitignored; create from template so CD works without committing it
-          printf '%s\n' \
-            'apiVersion: v1' \
-            'kind: Secret' \
-            'metadata:' \
-            '  name: billing-service-secrets' \
-            '  namespace: billing-service' \
-            'type: Opaque' \
-            'data:' \
-            '  _PLACEHOLDER: __PLACEHOLDER_B64__' \
-            > k8s/secrets.yaml
+          # MERCADOPAGO_ACCESS_TOKEN: when set in GitHub Secrets, inject into K8s Secret for the pod
+          MERCADOPAGO_B64=""
+          if [[ -n "${MERCADOPAGO_ACCESS_TOKEN:-}" ]]; then
+            MERCADOPAGO_B64=$(echo -n "$MERCADOPAGO_ACCESS_TOKEN" | base64 -w0 2>/dev/null || echo -n "$MERCADOPAGO_ACCESS_TOKEN" | base64)
+          fi
+
+          {
+            echo 'apiVersion: v1'
+            echo 'kind: Secret'
+            echo 'metadata:'
+            echo '  name: billing-service-secrets'
+            echo '  namespace: billing-service'
+            echo 'type: Opaque'
+            echo 'data:'
+            echo '  _PLACEHOLDER: __PLACEHOLDER_B64__'
+            if [[ -n "$MERCADOPAGO_B64" ]]; then
+              echo "  MERCADOPAGO_ACCESS_TOKEN: $MERCADOPAGO_B64"
+            fi
+          } > k8s/secrets.yaml
 
       - name: Prepare Kubernetes manifests
         env:
@@ -170,6 +181,7 @@ jobs:
           SQS_QUEUE_SERVICE_ORDER_EVENTS: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_SERVICE_ORDER_EVENTS }}
           SQS_QUEUE_BILLING_EVENTS: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_BILLING_EVENTS }}
           IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
+          MERCADOPAGO_ACCESS_TOKEN: ${{ secrets.MERCADOPAGO_ACCESS_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -178,6 +190,13 @@ jobs:
           sed -i "s|__DYNAMODB_TABLE_PAYMENTS__|${DYNAMODB_TABLE_PAYMENTS}|g" k8s/configmap.yaml
           sed -i "s|__SQS_QUEUE_SERVICE_ORDER_EVENTS__|${SQS_QUEUE_SERVICE_ORDER_EVENTS}|g" k8s/configmap.yaml
           sed -i "s|__SQS_QUEUE_BILLING_EVENTS__|${SQS_QUEUE_BILLING_EVENTS}|g" k8s/configmap.yaml
+
+          # Mercado Pago: enable when token is set so the app uses MP in production
+          if [[ -n "${MERCADOPAGO_ACCESS_TOKEN:-}" ]]; then
+            sed -i "s|__MERCADOPAGO_ENABLED__|true|g" k8s/configmap.yaml
+          else
+            sed -i "s|__MERCADOPAGO_ENABLED__|false|g" k8s/configmap.yaml
+          fi
 
           # ServiceAccount - IRSA role ARN
           sed -i "s|__IRSA_ROLE_ARN__|${IRSA_ROLE_ARN}|g" k8s/service-account.yaml

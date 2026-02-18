@@ -23,6 +23,9 @@ data:
   
   # Spring Configuration
   SPRING_PROFILES_ACTIVE: "production"
+
+  # Mercado Pago (populated by CD: true when MERCADOPAGO_ACCESS_TOKEN secret is set)
+  MERCADOPAGO_ENABLED: "__MERCADOPAGO_ENABLED__"
   
   # Actuator Configuration
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"

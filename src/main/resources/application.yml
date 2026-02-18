@@ -60,6 +60,11 @@ aws:
       service-order-events: service-order-events
       billing-events: billing-events
 
+# Pagamentos: simulator (sem Mercado Pago). Para usar MP, defina mercadopago.enabled=true e MERCADOPAGO_ACCESS_TOKEN.
+mercadopago:
+  enabled: false
+  payer-email: test_user_br@testuser.com
+
 ---
 # Production profile
 spring:
@@ -83,6 +88,11 @@ aws:
       service-order-events: ${SQS_QUEUE_SERVICE_ORDER_EVENTS:service-order-events.fifo}
       billing-events: ${SQS_QUEUE_BILLING_EVENTS:billing-events.fifo}
 
+# Mercado Pago: habilitar em produção e definir MERCADOPAGO_ACCESS_TOKEN (secret).
+mercadopago:
+  enabled: ${MERCADOPAGO_ENABLED:false}
+  payer-email: ${MERCADOPAGO_PAYER_EMAIL:test_user_br@testuser.com}
+
 ---
 # Test profile
 spring:
@@ -101,6 +111,9 @@ aws:
     queues:
       service-order-events: service-order-events-test
       billing-events: billing-events-test
+
+mercadopago:
+  enabled: false
 
 logging:
   level:
