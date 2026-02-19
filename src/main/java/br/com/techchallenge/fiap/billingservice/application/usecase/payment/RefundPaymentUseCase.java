@@ -6,8 +6,10 @@ import br.com.techchallenge.fiap.billingservice.application.exception.InvalidDat
 import br.com.techchallenge.fiap.billingservice.application.exception.NotFoundException;
 import br.com.techchallenge.fiap.billingservice.application.gateway.PaymentGateway;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.function.Consumer;
 
 /**
  * Use case for refunding a payment (compensation/rollback).
@@ -16,6 +18,9 @@ import java.time.LocalDateTime;
 public class RefundPaymentUseCase {
 
     private final PaymentGateway paymentGateway;
+
+    @Setter
+    private Consumer<Payment> onRefundCallback;
 
     /**
      * Execute the use case to refund a payment.
@@ -44,7 +49,14 @@ public class RefundPaymentUseCase {
             LocalDateTime.now()
         );
 
-        // Save and return
-        return paymentGateway.update(refundedPayment);
+        // Save
+        Payment savedPayment = paymentGateway.update(refundedPayment);
+
+        // Publish PaymentRefundedEvent via callback (Saga compensation)
+        if (onRefundCallback != null) {
+            onRefundCallback.accept(savedPayment);
+        }
+
+        return savedPayment;
     }
 }

@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
  */
 @Builder
 public record PaymentRefundedEvent(
+    String eventType,
     String eventId,
     String paymentId,
     String budgetId,

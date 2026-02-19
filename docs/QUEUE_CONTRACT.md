@@ -7,7 +7,9 @@ Este documento descreve os contratos **reais** usados pela aplicação para publ
 As filas são configuradas via variáveis de ambiente (ConfigMap/Secrets no K8s):
 
 - **Consumo (inbound):** `SQS_QUEUE_SERVICE_ORDER_EVENTS` – fila onde o Billing Service consome eventos de OS criada
-- **Publicação (outbound):** `SQS_QUEUE_BILLING_EVENTS` – fila onde o Billing Service publica eventos (orçamento aprovado/rejeitado, pagamento processado/falhou, estorno)
+- **Publicação (outbound):** `SQS_QUEUE_BILLING_EVENTS` – fila FIFO de eventos (Saga tracking / Execution Service)
+- **Publicação (outbound):** `SQS_QUEUE_QUOTE_APPROVED` – fila standard para o OS Service (orçamento aprovado)
+- **Publicação (outbound):** `SQS_QUEUE_PAYMENT_FAILED` – fila standard para o OS Service (compensação)
 
 No `application.yml` (perfil production) essas variáveis mapeiam para:
 
@@ -30,7 +32,7 @@ Para integração com o OS Service, o payload deve ser compatível com o que o O
 - `customerId` (String)
 - `vehicleId` (String)
 - `items` (Array) – obrigatório para montar o orçamento
-  - `type` (String): LABOR | PART
+  - `type` (String): **SERVICE** | **RESOURCE**
   - `itemCode` (String)
   - `description` (String)
   - `quantity` (Integer)
@@ -47,18 +49,26 @@ Exemplo mínimo esperado pelo Billing:
   "vehicleId": "789",
   "items": [
     {
-      "type": "LABOR",
-      "itemCode": "SVC-001",
+      "type": "SERVICE",
+      "itemCode": "301",
       "description": "Troca de óleo",
       "quantity": 1,
       "unitPrice": 80.00
+    },
+    {
+      "type": "RESOURCE",
+      "itemCode": "401",
+      "description": "Filtro de óleo",
+      "quantity": 1,
+      "unitPrice": 45.00
     }
   ],
+  "totalPrice": 125.00,
   "timestamp": "2026-02-12T10:00:00"
 }
 ```
 
-**Nota:** O OS Service atualmente publica `orderId` (Long) e não envia `items`. Para integração direta, é necessário alinhar o contrato (ver ANALISE-OS-SERVICE-E-INFRA.md) ou implementar um adapter.
+> **Nota:** O OS Service publica `ORDER_CREATED` na fila standard `service-order-events` com payload enriquecido (itens, totalPrice, serviceOrderId como String). O consumer do Billing parseia os itens e cria o Budget automaticamente.
 
 ## Filas de saída (publicação)
 
@@ -80,17 +90,12 @@ Publicada por `SqsEventPublisher` / orquestradores.
 
 ### Integração com a infraestrutura do OS Service
 
-Na infra existente (infra-database) estão definidas as filas **Standard** que o OS Service **consome**:
+As filas standard consumidas pelo OS Service já estão integradas:
 
-- `quote-approved-queue` – OS atualiza status para IN_EXECUTION
-- `payment-failed-queue` – OS executa compensação (cancelar)
+- **`quote-approved-queue`** — `BudgetEventOrchestrator` publica `{ orderId, budgetId, totalAmount }` ao aprovar Budget
+- **`payment-failed-queue`** — `PaymentProcessingOrchestrator` publica `{ orderId, reason }` ao detectar pagamento falho
 
-Para o Billing integrar com o OS Service:
-
-- **BudgetApprovedEvent** deve ser publicado na fila `quote-approved-queue` (payload com `orderId` numérico, conforme QUEUE_CONTRACT do OS Service).
-- **PaymentFailedEvent** deve ser publicado na fila `payment-failed-queue` (payload com `orderId` e opcionalmente `reason`).
-
-Atualmente o Billing publica todos os eventos em uma única fila (`billing-events`). A extensão para publicar em `quote-approved-queue` e `payment-failed-queue` pode ser feita no publisher/orchestrator (ver EVENT-CONTRACTS.md e ANALISE-OS-SERVICE-E-INFRA.md).
+Ambos os orquestradores publicam também na fila FIFO `billing-events.fifo` para tracking/auditoria.
 
 ### Exemplo de payload (BudgetApprovedEvent)
 

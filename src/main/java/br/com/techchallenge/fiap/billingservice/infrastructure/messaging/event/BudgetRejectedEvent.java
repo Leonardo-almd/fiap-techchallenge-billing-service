@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
  */
 @Builder
 public record BudgetRejectedEvent(
+    String eventType,
     String eventId,
     String budgetId,
     String serviceOrderId,

@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
  */
 @Builder
 public record BudgetApprovedEvent(
+    String eventType,
     String eventId,
     String budgetId,
     String serviceOrderId,
