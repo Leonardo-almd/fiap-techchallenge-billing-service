@@ -18,8 +18,8 @@ import java.util.UUID;
  * Orchestrator for publishing budget-related events.
  * Part of the Saga choreography pattern.
  * Publishes to:
- *   - billing-events.fifo (FIFO, for Execution Service / audit)
- *   - quote-approved-queue (Standard, for OS Service → IN_EXECUTION transition)
+ * - billing-events.fifo (FIFO, for Execution Service / audit)
+ * - quote-approved-queue (Standard, for OS Service → IN_EXECUTION transition)
  */
 @Service
 @RequiredArgsConstructor
@@ -39,16 +39,16 @@ public class BudgetEventOrchestrator {
         log.info("Publishing BudgetApprovedEvent for budget: {}", budget.budgetId());
 
         BudgetApprovedEvent event = BudgetApprovedEvent.builder()
-            .eventType("BudgetApproved")
-            .eventId(UUID.randomUUID().toString())
-            .budgetId(budget.budgetId())
-            .serviceOrderId(budget.serviceOrderId())
-            .customerId(budget.customerId())
-            .vehicleId(budget.vehicleId())
-            .totalAmount(budget.totalAmount().value())
-            .approvedAt(budget.updatedAt())
-            .timestamp(LocalDateTime.now())
-            .build();
+                .eventType("BudgetApproved")
+                .eventId(UUID.randomUUID().toString())
+                .budgetId(budget.budgetId())
+                .serviceOrderId(budget.serviceOrderId())
+                .customerId(budget.customerId())
+                .vehicleId(budget.vehicleId())
+                .totalAmount(budget.totalAmount().value())
+                .approvedAt(budget.updatedAt())
+                .timestamp(LocalDateTime.now())
+                .build();
 
         // Publish to billing-events.fifo (Execution Service / audit)
         eventPublisher.publishEvent(event);
@@ -77,14 +77,14 @@ public class BudgetEventOrchestrator {
         log.info("Publishing BudgetRejectedEvent for budget: {}", budget.budgetId());
 
         BudgetRejectedEvent event = BudgetRejectedEvent.builder()
-            .eventType("BudgetRejected")
-            .eventId(UUID.randomUUID().toString())
-            .budgetId(budget.budgetId())
-            .serviceOrderId(budget.serviceOrderId())
-            .customerId(budget.customerId())
-            .rejectedAt(budget.updatedAt())
-            .timestamp(LocalDateTime.now())
-            .build();
+                .eventType("BudgetRejected")
+                .eventId(UUID.randomUUID().toString())
+                .budgetId(budget.budgetId())
+                .serviceOrderId(budget.serviceOrderId())
+                .customerId(budget.customerId())
+                .rejectedAt(budget.updatedAt())
+                .timestamp(LocalDateTime.now())
+                .build();
 
         eventPublisher.publishEvent(event);
 

@@ -84,11 +84,10 @@ public class BeanConfig {
             ApproveBudgetUseCase approveBudgetUseCase,
             RejectBudgetUseCase rejectBudgetUseCase) {
         return new BudgetCleanArchController(
-            createBudgetUseCase,
-            findBudgetUseCase,
-            approveBudgetUseCase,
-            rejectBudgetUseCase
-        );
+                createBudgetUseCase,
+                findBudgetUseCase,
+                approveBudgetUseCase,
+                rejectBudgetUseCase);
     }
 
     @Bean
@@ -97,9 +96,8 @@ public class BeanConfig {
             FindPaymentUseCase findPaymentUseCase,
             RefundPaymentUseCase refundPaymentUseCase) {
         return new PaymentCleanArchController(
-            processPaymentUseCase,
-            findPaymentUseCase,
-            refundPaymentUseCase
-        );
+                processPaymentUseCase,
+                findPaymentUseCase,
+                refundPaymentUseCase);
     }
 }

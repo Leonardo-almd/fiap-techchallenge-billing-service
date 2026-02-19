@@ -22,11 +22,12 @@ import java.util.UUID;
 
 /**
  * Orchestrator for processing pending payments.
- * This service polls for PROCESSING payments and simulates payment with the gateway.
+ * This service polls for PROCESSING payments and simulates payment with the
+ * gateway.
  * Part of the Saga choreography pattern.
  * Publishes to:
- *   - billing-events.fifo (FIFO, for Execution Service)
- *   - payment-failed-queue (Standard, for OS Service → CANCELLED compensation)
+ * - billing-events.fifo (FIFO, for Execution Service)
+ * - payment-failed-queue (Standard, for OS Service → CANCELLED compensation)
  */
 @Service
 @RequiredArgsConstructor
@@ -51,10 +52,10 @@ public class PaymentProcessingOrchestrator {
             log.info("Checking for pending payments...");
 
             List<Payment> allPayments = paymentGateway.findAll(0, 100);
-            
+
             List<Payment> processingPayments = allPayments.stream()
-                .filter(p -> p.status().isProcessing())
-                .toList();
+                    .filter(p -> p.status().isProcessing())
+                    .toList();
 
             if (processingPayments.isEmpty()) {
                 log.debug("No pending payments to process");
@@ -77,9 +78,9 @@ public class PaymentProcessingOrchestrator {
             log.info("Processing payment: {}", payment.paymentId());
 
             PaymentGatewaySimulator.PaymentRequest request = PaymentGatewaySimulator.PaymentRequest.builder()
-                .amount(payment.amount().value())
-                .method(payment.method())
-                .build();
+                    .amount(payment.amount().value())
+                    .method(payment.method())
+                    .build();
 
             PaymentGatewaySimulator.PaymentResult result = paymentGatewaySimulator.processPayment(request);
 
@@ -100,25 +101,26 @@ public class PaymentProcessingOrchestrator {
         LocalDateTime now = LocalDateTime.now();
 
         Payment paidPayment = payment.withStatusUpdated(PaymentStatus.paid(), now)
-            .withExternalId(result.externalId())
-            .withAuthorizationCode(result.authorizationCode());
+                .withExternalId(result.externalId())
+                .withAuthorizationCode(result.authorizationCode());
 
         paymentGateway.update(paidPayment);
 
-        // Publish PaymentProcessedEvent to billing-events.fifo (Execution Service creates task)
+        // Publish PaymentProcessedEvent to billing-events.fifo (Execution Service
+        // creates task)
         PaymentProcessedEvent event = PaymentProcessedEvent.builder()
-            .eventType("PaymentProcessed")
-            .eventId(UUID.randomUUID().toString())
-            .paymentId(paidPayment.paymentId())
-            .budgetId(paidPayment.budgetId())
-            .serviceOrderId(paidPayment.serviceOrderId())
-            .amount(paidPayment.amount().value())
-            .method(paidPayment.method().name())
-            .externalId(paidPayment.externalId())
-            .authorizationCode(paidPayment.authorizationCode())
-            .paidAt(now)
-            .timestamp(now)
-            .build();
+                .eventType("PaymentProcessed")
+                .eventId(UUID.randomUUID().toString())
+                .paymentId(paidPayment.paymentId())
+                .budgetId(paidPayment.budgetId())
+                .serviceOrderId(paidPayment.serviceOrderId())
+                .amount(paidPayment.amount().value())
+                .method(paidPayment.method().name())
+                .externalId(paidPayment.externalId())
+                .authorizationCode(paidPayment.authorizationCode())
+                .paidAt(now)
+                .timestamp(now)
+                .build();
 
         eventPublisher.publishEvent(event);
 
@@ -131,25 +133,27 @@ public class PaymentProcessingOrchestrator {
         LocalDateTime now = LocalDateTime.now();
 
         Payment failedPayment = payment.withStatusUpdated(PaymentStatus.failed(), now)
-            .withFailureReason(result.failureReason());
+                .withFailureReason(result.failureReason());
 
         paymentGateway.update(failedPayment);
 
-        // Publish PaymentFailedEvent to billing-events.fifo (Execution Service cancels task)
+        // Publish PaymentFailedEvent to billing-events.fifo (Execution Service cancels
+        // task)
         PaymentFailedEvent event = PaymentFailedEvent.builder()
-            .eventType("PaymentFailed")
-            .eventId(UUID.randomUUID().toString())
-            .paymentId(failedPayment.paymentId())
-            .budgetId(failedPayment.budgetId())
-            .serviceOrderId(failedPayment.serviceOrderId())
-            .failureReason(result.failureReason())
-            .failedAt(now)
-            .timestamp(now)
-            .build();
+                .eventType("PaymentFailed")
+                .eventId(UUID.randomUUID().toString())
+                .paymentId(failedPayment.paymentId())
+                .budgetId(failedPayment.budgetId())
+                .serviceOrderId(failedPayment.serviceOrderId())
+                .failureReason(result.failureReason())
+                .failedAt(now)
+                .timestamp(now)
+                .build();
 
         eventPublisher.publishEvent(event);
 
-        // Also publish to payment-failed-queue (OS Service: Saga compensation → CANCELLED)
+        // Also publish to payment-failed-queue (OS Service: Saga compensation →
+        // CANCELLED)
         try {
             Map<String, Object> osPayload = new HashMap<>();
             osPayload.put("orderId", Long.parseLong(failedPayment.serviceOrderId()));

@@ -11,15 +11,15 @@ import java.time.LocalDateTime;
  */
 @Builder
 public record PaymentProcessedEvent(
-    String eventType,
-    String eventId,
-    String paymentId,
-    String budgetId,
-    String serviceOrderId,
-    BigDecimal amount,
-    String method,
-    String externalId,
-    String authorizationCode,
-    LocalDateTime paidAt,
-    LocalDateTime timestamp
-) {}
+        String eventType,
+        String eventId,
+        String paymentId,
+        String budgetId,
+        String serviceOrderId,
+        BigDecimal amount,
+        String method,
+        String externalId,
+        String authorizationCode,
+        LocalDateTime paidAt,
+        LocalDateTime timestamp) {
+}

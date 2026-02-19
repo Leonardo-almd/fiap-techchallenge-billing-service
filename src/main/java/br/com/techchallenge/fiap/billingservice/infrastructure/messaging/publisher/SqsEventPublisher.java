@@ -17,7 +17,8 @@ import java.util.Map;
 /**
  * SQS event publisher for publishing domain events.
  * Uses SqsOperations (port) so tests can mock without AWS SDK types.
- * Supports both FIFO queues (billing-events) and standard queues (OS-service compensation).
+ * Supports both FIFO queues (billing-events) and standard queues (OS-service
+ * compensation).
  */
 @Service
 @RequiredArgsConstructor
@@ -38,15 +39,15 @@ public class SqsEventPublisher {
             String queueUrl = getQueueUrl(billingEventsQueueName);
             String messageBody = objectMapper.writeValueAsString(event);
 
-            log.info("Publishing event: {} to queue: {}", 
-                     event.getClass().getSimpleName(), billingEventsQueueName);
+            log.info("Publishing event: {} to queue: {}",
+                    event.getClass().getSimpleName(), billingEventsQueueName);
 
             SendMessageRequest request = SendMessageRequest.builder()
-                .queueUrl(queueUrl)
-                .messageBody(messageBody)
-                .messageGroupId(event.getClass().getSimpleName())
-                .messageDeduplicationId(java.util.UUID.randomUUID().toString())
-                .build();
+                    .queueUrl(queueUrl)
+                    .messageBody(messageBody)
+                    .messageGroupId(event.getClass().getSimpleName())
+                    .messageDeduplicationId(java.util.UUID.randomUUID().toString())
+                    .build();
 
             SendMessageResponse response = sqsOperations.sendMessage(request);
 
@@ -63,7 +64,8 @@ public class SqsEventPublisher {
 
     /**
      * Publish a payload to a standard (non-FIFO) queue.
-     * Used for Saga compensation/notification queues (e.g. quote-approved-queue, payment-failed-queue).
+     * Used for Saga compensation/notification queues (e.g. quote-approved-queue,
+     * payment-failed-queue).
      *
      * @param queueName the SQS standard queue name
      * @param payload   a simple Map that will be serialized to JSON
@@ -76,9 +78,9 @@ public class SqsEventPublisher {
             log.info("Publishing to standard queue: {}", queueName);
 
             SendMessageRequest request = SendMessageRequest.builder()
-                .queueUrl(queueUrl)
-                .messageBody(messageBody)
-                .build();
+                    .queueUrl(queueUrl)
+                    .messageBody(messageBody)
+                    .build();
 
             SendMessageResponse response = sqsOperations.sendMessage(request);
 
@@ -98,9 +100,9 @@ public class SqsEventPublisher {
      */
     private String getQueueUrl(String queueName) {
         GetQueueUrlRequest request = GetQueueUrlRequest.builder()
-            .queueName(queueName)
-            .build();
-        
+                .queueName(queueName)
+                .build();
+
         return sqsOperations.getQueueUrl(request).queueUrl();
     }
 }

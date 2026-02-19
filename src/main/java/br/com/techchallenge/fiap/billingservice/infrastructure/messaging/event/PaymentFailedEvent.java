@@ -10,12 +10,12 @@ import java.time.LocalDateTime;
  */
 @Builder
 public record PaymentFailedEvent(
-    String eventType,
-    String eventId,
-    String paymentId,
-    String budgetId,
-    String serviceOrderId,
-    String failureReason,
-    LocalDateTime failedAt,
-    LocalDateTime timestamp
-) {}
+        String eventType,
+        String eventId,
+        String paymentId,
+        String budgetId,
+        String serviceOrderId,
+        String failureReason,
+        LocalDateTime failedAt,
+        LocalDateTime timestamp) {
+}

@@ -45,10 +45,10 @@ public class ServiceOrderEventConsumer {
             String queueUrl = getQueueUrl();
 
             ReceiveMessageRequest request = ReceiveMessageRequest.builder()
-                .queueUrl(queueUrl)
-                .maxNumberOfMessages(10)
-                .waitTimeSeconds(5)
-                .build();
+                    .queueUrl(queueUrl)
+                    .maxNumberOfMessages(10)
+                    .waitTimeSeconds(5)
+                    .build();
 
             ReceiveMessageResponse response = sqsClient.receiveMessage(request);
 
@@ -95,7 +95,8 @@ public class ServiceOrderEventConsumer {
                 return;
             }
 
-            // Extract items — may be present (Billing-native format) or absent (OS-Service format)
+            // Extract items — may be present (Billing-native format) or absent (OS-Service
+            // format)
             List<CreateBudgetUseCase.BudgetItemRequest> items = extractItems(json, serviceOrderId, description);
 
             log.info("Creating budget for service order: {} with {} item(s)", serviceOrderId, items.size());
@@ -111,8 +112,10 @@ public class ServiceOrderEventConsumer {
     }
 
     /**
-     * Extract items from event JSON. The OS Service sends services and resources as an items[] array
-     * with {type, itemCode, description, quantity, unitPrice}. If items are absent (unexpected),
+     * Extract items from event JSON. The OS Service sends services and resources as
+     * an items[] array
+     * with {type, itemCode, description, quantity, unitPrice}. If items are absent
+     * (unexpected),
      * creates a fallback SERVICE item so the Budget can still be created.
      */
     private List<CreateBudgetUseCase.BudgetItemRequest> extractItems(
@@ -127,30 +130,31 @@ public class ServiceOrderEventConsumer {
                 String desc = itemNode.has("description") ? itemNode.get("description").asText() : "";
                 int quantity = itemNode.has("quantity") ? itemNode.get("quantity").asInt() : 1;
                 BigDecimal unitPrice = itemNode.has("unitPrice")
-                    ? new BigDecimal(itemNode.get("unitPrice").asText())
-                    : BigDecimal.ZERO;
+                        ? new BigDecimal(itemNode.get("unitPrice").asText())
+                        : BigDecimal.ZERO;
 
                 items.add(new CreateBudgetUseCase.BudgetItemRequest(
-                    BudgetItemType.valueOf(type), itemCode, desc, quantity, unitPrice));
+                        BudgetItemType.valueOf(type), itemCode, desc, quantity, unitPrice));
             }
             log.info("Parsed {} item(s) from ORDER_CREATED event for OS: {}", items.size(), serviceOrderId);
         } else {
-            // Fallback: items should normally come from OS Service, but create a generic one if absent
+            // Fallback: items should normally come from OS Service, but create a generic
+            // one if absent
             log.warn("No items array in ORDER_CREATED event for OS: {}. Creating fallback item.", serviceOrderId);
             items.add(new CreateBudgetUseCase.BudgetItemRequest(
-                BudgetItemType.SERVICE,
-                "OS-" + serviceOrderId,
-                description != null && !description.isBlank() ? description : "Servico OS #" + serviceOrderId,
-                1,
-                BigDecimal.ZERO
-            ));
+                    BudgetItemType.SERVICE,
+                    "OS-" + serviceOrderId,
+                    description != null && !description.isBlank() ? description : "Servico OS #" + serviceOrderId,
+                    1,
+                    BigDecimal.ZERO));
         }
 
         return items;
     }
 
     /**
-     * Extract a string field from JSON, trying multiple field names (alias support).
+     * Extract a string field from JSON, trying multiple field names (alias
+     * support).
      */
     private String extractStringField(JsonNode json, String... fieldNames) {
         for (String name : fieldNames) {
@@ -163,16 +167,16 @@ public class ServiceOrderEventConsumer {
 
     private void deleteMessage(String queueUrl, String receiptHandle) {
         DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder()
-            .queueUrl(queueUrl)
-            .receiptHandle(receiptHandle)
-            .build();
+                .queueUrl(queueUrl)
+                .receiptHandle(receiptHandle)
+                .build();
         sqsClient.deleteMessage(deleteRequest);
     }
 
     private String getQueueUrl() {
         GetQueueUrlRequest request = GetQueueUrlRequest.builder()
-            .queueName(queueName)
-            .build();
+                .queueName(queueName)
+                .build();
         return sqsClient.getQueueUrl(request).queueUrl();
     }
 }

@@ -28,26 +28,24 @@ public class RefundPaymentUseCase {
      * 
      * @param paymentId Payment ID to refund
      * @return Refunded payment
-     * @throws NotFoundException if payment not found
+     * @throws NotFoundException    if payment not found
      * @throws InvalidDataException if payment is not paid
      */
     public Payment execute(String paymentId) {
         // Find payment
         Payment payment = paymentGateway.findById(paymentId)
-            .orElseThrow(() -> new NotFoundException("Payment not found with id: " + paymentId));
+                .orElseThrow(() -> new NotFoundException("Payment not found with id: " + paymentId));
 
         // Validate status
         if (!payment.status().isPaid()) {
             throw new InvalidDataException(
-                "Only paid payments can be refunded. Current status: " + payment.status().name()
-            );
+                    "Only paid payments can be refunded. Current status: " + payment.status().name());
         }
 
         // Update status to REFUNDED
         Payment refundedPayment = payment.withStatusUpdated(
-            PaymentStatus.refunded(),
-            LocalDateTime.now()
-        );
+                PaymentStatus.refunded(),
+                LocalDateTime.now());
 
         // Save
         Payment savedPayment = paymentGateway.update(refundedPayment);

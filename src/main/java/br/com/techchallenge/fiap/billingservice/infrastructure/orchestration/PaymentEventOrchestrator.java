@@ -12,7 +12,8 @@ import java.util.UUID;
 
 /**
  * Orchestrator for publishing payment-related events.
- * Handles PaymentRefundedEvent publishing as part of the Saga compensation pattern.
+ * Handles PaymentRefundedEvent publishing as part of the Saga compensation
+ * pattern.
  */
 @Service
 @RequiredArgsConstructor
@@ -23,20 +24,21 @@ public class PaymentEventOrchestrator {
 
     /**
      * Publish PaymentRefundedEvent to billing-events FIFO queue.
-     * This triggers Execution Service to cancel the execution task (Saga compensation).
+     * This triggers Execution Service to cancel the execution task (Saga
+     * compensation).
      */
     public void publishPaymentRefunded(Payment payment) {
         log.info("Publishing PaymentRefundedEvent for payment: {}", payment.paymentId());
 
         PaymentRefundedEvent event = PaymentRefundedEvent.builder()
-            .eventType("PaymentRefunded")
-            .eventId(UUID.randomUUID().toString())
-            .paymentId(payment.paymentId())
-            .budgetId(payment.budgetId())
-            .serviceOrderId(payment.serviceOrderId())
-            .refundedAt(payment.updatedAt())
-            .timestamp(LocalDateTime.now())
-            .build();
+                .eventType("PaymentRefunded")
+                .eventId(UUID.randomUUID().toString())
+                .paymentId(payment.paymentId())
+                .budgetId(payment.budgetId())
+                .serviceOrderId(payment.serviceOrderId())
+                .refundedAt(payment.updatedAt())
+                .timestamp(LocalDateTime.now())
+                .build();
 
         eventPublisher.publishEvent(event);
 

@@ -11,13 +11,13 @@ import java.time.LocalDateTime;
  */
 @Builder
 public record BudgetApprovedEvent(
-    String eventType,
-    String eventId,
-    String budgetId,
-    String serviceOrderId,
-    String customerId,
-    String vehicleId,
-    BigDecimal totalAmount,
-    LocalDateTime approvedAt,
-    LocalDateTime timestamp
-) {}
+        String eventType,
+        String eventId,
+        String budgetId,
+        String serviceOrderId,
+        String customerId,
+        String vehicleId,
+        BigDecimal totalAmount,
+        LocalDateTime approvedAt,
+        LocalDateTime timestamp) {
+}
