@@ -58,7 +58,9 @@ aws:
   sqs:
     queues:
       service-order-events: service-order-events
-      billing-events: billing-events
+      billing-events: billing-events.fifo
+      quote-approved-queue: quote-approved-queue
+      payment-failed-queue: payment-failed-queue
 
 ---
 # Production profile
@@ -80,8 +82,10 @@ aws:
       payments: ${DYNAMODB_TABLE_PAYMENTS:billing-service-payments}
   sqs:
     queues:
-      service-order-events: ${SQS_QUEUE_SERVICE_ORDER_EVENTS:service-order-events.fifo}
+      service-order-events: ${SQS_QUEUE_SERVICE_ORDER_EVENTS:service-order-events}
       billing-events: ${SQS_QUEUE_BILLING_EVENTS:billing-events.fifo}
+      quote-approved-queue: ${SQS_QUEUE_QUOTE_APPROVED:quote-approved-queue}
+      payment-failed-queue: ${SQS_QUEUE_PAYMENT_FAILED:payment-failed-queue}
 
 ---
 # Test profile
@@ -101,6 +105,8 @@ aws:
     queues:
       service-order-events: service-order-events-test
       billing-events: billing-events-test
+      quote-approved-queue: quote-approved-queue-test
+      payment-failed-queue: payment-failed-queue-test
 
 logging:
   level:

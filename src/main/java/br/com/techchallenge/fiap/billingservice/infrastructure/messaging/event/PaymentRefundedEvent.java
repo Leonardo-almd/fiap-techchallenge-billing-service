@@ -10,10 +10,11 @@ import java.time.LocalDateTime;
  */
 @Builder
 public record PaymentRefundedEvent(
-    String eventId,
-    String paymentId,
-    String budgetId,
-    String serviceOrderId,
-    LocalDateTime refundedAt,
-    LocalDateTime timestamp
-) {}
+        String eventType,
+        String eventId,
+        String paymentId,
+        String budgetId,
+        String serviceOrderId,
+        LocalDateTime refundedAt,
+        LocalDateTime timestamp) {
+}

@@ -289,6 +289,7 @@ fiap-techchallenge-billing-service/
 | `POST` | `/api/v1/payments` | Processar pagamento |
 | `GET` | `/api/v1/payments/{id}` | Buscar por ID |
 | `GET` | `/api/v1/payments/budget/{id}` | Buscar por orçamento |
+| `GET` | `/api/v1/payments/service-order/{serviceOrderId}` | Buscar por Ordem de Serviço |
 | `GET` | `/api/v1/payments` | Listar todos (paginado) |
 | `PUT` | `/api/v1/payments/{id}/refund` | Estornar pagamento |
 
@@ -390,15 +391,18 @@ SQS_ENDPOINT: http://localhost:4566  # LocalStack
 SQS_QUEUE_SERVICE_ORDER_EVENTS: service-order-events.fifo
 SQS_QUEUE_BILLING_EVENTS: billing-events.fifo
 
-# Payment Simulator
-PAYMENT_SIMULATOR_SUCCESS_RATE: 0.9  # 90%
-PAYMENT_SIMULATOR_MIN_DELAY_MS: 2000
-PAYMENT_SIMULATOR_MAX_DELAY_MS: 5000
+# Payment Gateway Simulator
+PAYMENT_GATEWAY_SUCCESS_RATE: "0.90"   # Configurado no ConfigMap
+PAYMENT_GATEWAY_MIN_DELAY_MS: "2000"   # Configurado no ConfigMap
+PAYMENT_GATEWAY_MAX_DELAY_MS: "5000"   # Configurado no ConfigMap
+# Nota: atualmente o PaymentGatewaySimulator usa valores hardcoded
+# (90%, 2000-5000ms). As variáveis acima estão no ConfigMap como
+# preparação para futura externalização via @Value.
 ```
 
 ### Secrets Kubernetes
 
-Ver [`k8s/secret.yaml`](k8s/secret.yaml) e [`.github/secrets-example.md`](.github/secrets-example.md)
+O Billing Service utiliza **IRSA** (IAM Roles for Service Accounts) para acesso a recursos AWS — não há `secret.yaml` neste repositório. Credenciais sensíveis são gerenciadas via Secrets no cluster (provisionados pela infra Terraform). Ver [`.github/secrets-example.md`](.github/secrets-example.md)
 
 ---
 
@@ -502,6 +506,7 @@ Ver [`.github/workflows/README.md`](.github/workflows/README.md)
 - ✅ **Image Scanning** - Trivy no CI
 - ✅ **Dependency Scanning** - OWASP Dependency Check
 - ✅ **Input Validation** - Bean Validation em todos os DTOs
+- ✅ **Conditional JWT** - `SecurityConfig` habilita OAuth2/JWT quando `spring.security.oauth2.resourceserver.jwt.issuer-uri` está configurado; caso contrário (ambiente local/Docker sem OIDC), desabilita JWT e libera todas as rotas
 
 ---
 
@@ -536,7 +541,8 @@ startupProbe:    /actuator/health
 | Evento | Origem | Ação |
 |--------|--------|------|
 | `ServiceOrderCreatedEvent` | OS Service | Criar budget automaticamente |
-| `ServiceOrderCancelledEvent` | OS Service | Cancelar budget / estornar |
+
+> **Nota:** Atualmente o consumer (`ServiceOrderEventConsumer`) processa apenas eventos do tipo `ORDER_CREATED`. Outros tipos de evento recebidos na fila são descartados silenciosamente (log DEBUG). O tratamento de `ServiceOrderCancelledEvent` (cancelar budget / estornar) é um ponto de extensão futuro.
 
 ### Eventos Publicados
 

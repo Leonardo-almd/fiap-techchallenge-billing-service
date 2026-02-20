@@ -6,8 +6,10 @@ import br.com.techchallenge.fiap.billingservice.application.exception.InvalidDat
 import br.com.techchallenge.fiap.billingservice.application.exception.NotFoundException;
 import br.com.techchallenge.fiap.billingservice.application.gateway.PaymentGateway;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.function.Consumer;
 
 /**
  * Use case for refunding a payment (compensation/rollback).
@@ -17,34 +19,42 @@ public class RefundPaymentUseCase {
 
     private final PaymentGateway paymentGateway;
 
+    @Setter
+    private Consumer<Payment> onRefundCallback;
+
     /**
      * Execute the use case to refund a payment.
      * This is part of the Saga compensation pattern.
      * 
      * @param paymentId Payment ID to refund
      * @return Refunded payment
-     * @throws NotFoundException if payment not found
+     * @throws NotFoundException    if payment not found
      * @throws InvalidDataException if payment is not paid
      */
     public Payment execute(String paymentId) {
         // Find payment
         Payment payment = paymentGateway.findById(paymentId)
-            .orElseThrow(() -> new NotFoundException("Payment not found with id: " + paymentId));
+                .orElseThrow(() -> new NotFoundException("Payment not found with id: " + paymentId));
 
         // Validate status
         if (!payment.status().isPaid()) {
             throw new InvalidDataException(
-                "Only paid payments can be refunded. Current status: " + payment.status().name()
-            );
+                    "Only paid payments can be refunded. Current status: " + payment.status().name());
         }
 
         // Update status to REFUNDED
         Payment refundedPayment = payment.withStatusUpdated(
-            PaymentStatus.refunded(),
-            LocalDateTime.now()
-        );
+                PaymentStatus.refunded(),
+                LocalDateTime.now());
 
-        // Save and return
-        return paymentGateway.update(refundedPayment);
+        // Save
+        Payment savedPayment = paymentGateway.update(refundedPayment);
+
+        // Publish PaymentRefundedEvent via callback (Saga compensation)
+        if (onRefundCallback != null) {
+            onRefundCallback.accept(savedPayment);
+        }
+
+        return savedPayment;
     }
 }

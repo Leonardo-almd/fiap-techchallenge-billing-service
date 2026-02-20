@@ -12,6 +12,7 @@ import br.com.techchallenge.fiap.billingservice.application.usecase.payment.Find
 import br.com.techchallenge.fiap.billingservice.application.usecase.payment.ProcessPaymentUseCase;
 import br.com.techchallenge.fiap.billingservice.application.usecase.payment.RefundPaymentUseCase;
 import br.com.techchallenge.fiap.billingservice.infrastructure.orchestration.BudgetEventOrchestrator;
+import br.com.techchallenge.fiap.billingservice.infrastructure.orchestration.PaymentEventOrchestrator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -66,8 +67,12 @@ public class BeanConfig {
     }
 
     @Bean
-    public RefundPaymentUseCase refundPaymentUseCase(PaymentGateway paymentGateway) {
-        return new RefundPaymentUseCase(paymentGateway);
+    public RefundPaymentUseCase refundPaymentUseCase(
+            PaymentGateway paymentGateway,
+            PaymentEventOrchestrator paymentEventOrchestrator) {
+        RefundPaymentUseCase useCase = new RefundPaymentUseCase(paymentGateway);
+        useCase.setOnRefundCallback(paymentEventOrchestrator::publishPaymentRefunded);
+        return useCase;
     }
 
     // Clean Architecture Controllers
@@ -79,11 +84,10 @@ public class BeanConfig {
             ApproveBudgetUseCase approveBudgetUseCase,
             RejectBudgetUseCase rejectBudgetUseCase) {
         return new BudgetCleanArchController(
-            createBudgetUseCase,
-            findBudgetUseCase,
-            approveBudgetUseCase,
-            rejectBudgetUseCase
-        );
+                createBudgetUseCase,
+                findBudgetUseCase,
+                approveBudgetUseCase,
+                rejectBudgetUseCase);
     }
 
     @Bean
@@ -92,9 +96,8 @@ public class BeanConfig {
             FindPaymentUseCase findPaymentUseCase,
             RefundPaymentUseCase refundPaymentUseCase) {
         return new PaymentCleanArchController(
-            processPaymentUseCase,
-            findPaymentUseCase,
-            refundPaymentUseCase
-        );
+                processPaymentUseCase,
+                findPaymentUseCase,
+                refundPaymentUseCase);
     }
 }
