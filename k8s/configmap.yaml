@@ -27,9 +27,8 @@ data:
   # Spring Configuration
   SPRING_PROFILES_ACTIVE: "production"
   
-  # Security / JWT — deixar em branco para desabilitar autenticação (todas as rotas abertas).
-  # Para habilitar JWT, definir a URL do issuer (ex: https://auth.cargarage.com).
-  JWT_ISSUER_URI: ""
+  # Security: OAuth2/JWT desabilitado via spring.autoconfigure.exclude.
+  # Todas as rotas estão abertas (SecurityConfig permite tudo).
   
   # Actuator Configuration
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"

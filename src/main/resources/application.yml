@@ -5,11 +5,9 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
 
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${JWT_ISSUER_URI:}
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
 
 server:
   port: ${SERVER_PORT:8080}
@@ -48,11 +46,6 @@ spring:
   config:
     activate:
       on-profile: local
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ""
 
 aws:
   region: us-east-1
@@ -74,11 +67,6 @@ spring:
   config:
     activate:
       on-profile: production
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${JWT_ISSUER_URI:}
 
 aws:
   region: ${AWS_REGION:us-east-1}
