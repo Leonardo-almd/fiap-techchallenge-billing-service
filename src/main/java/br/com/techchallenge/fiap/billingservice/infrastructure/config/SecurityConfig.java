@@ -28,26 +28,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-        if (jwtIssuerUri != null && !jwtIssuerUri.isBlank()) {
-            // Production / staging: protect endpoints with JWT
-            http
-                    .authorizeHttpRequests(auth -> auth
-                            .requestMatchers(request -> request.getRequestURI() != null
-                                    && request.getRequestURI().contains("/actuator/"))
-                            .permitAll()
-                            .anyRequest()
-                            .authenticated())
-                    .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
-                    }));
-        } else {
-            // Local / e2e: no OAuth2 provider — permit all requests
-            http
-                    .authorizeHttpRequests(auth -> auth
-                            .anyRequest()
-                            .permitAll());
-        }
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest()
+                        .permitAll());
 
         return http.build();
     }
