@@ -28,41 +28,38 @@ spec:
                 name: billing-service-config
             - secretRef:
                 name: billing-service-secrets
-          # Resources: 384Mi request so Spring Boot has room to start; aligned with t3.small
+          # Resources optimized for t3.small (2 vCPU, 2GB RAM)
           resources:
             requests:
-              memory: "384Mi"
+              memory: "256Mi"
               cpu: "100m"
             limits:
               memory: "512Mi"
               cpu: "300m"
-          # Startup: Spring Boot can take 2–5 min on small resources; allow up to 10 min
-          startupProbe:
-            httpGet:
-              path: /api/billing-service/actuator/health
-              port: 8080
-            initialDelaySeconds: 60
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 60
-          # Readiness: give time for app to finish init (DynamoDB/SQS, etc.)
-          readinessProbe:
-            httpGet:
-              path: /api/billing-service/actuator/health/readiness
-              port: 8080
-            initialDelaySeconds: 90
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 6
-          # Liveness: only after app has had time to start
           livenessProbe:
             httpGet:
               path: /api/billing-service/actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 180
+            initialDelaySeconds: 120
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/billing-service/actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /api/billing-service/actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
