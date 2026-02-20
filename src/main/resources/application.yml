@@ -5,6 +5,12 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:}
+
 server:
   port: ${SERVER_PORT:8080}
   servlet:
@@ -46,7 +52,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8081/auth
+          issuer-uri: ""
 
 aws:
   region: us-east-1
@@ -72,7 +78,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${JWT_ISSUER_URI:https://auth.cargarage.com}
+          issuer-uri: ${JWT_ISSUER_URI:}
 
 aws:
   region: ${AWS_REGION:us-east-1}
