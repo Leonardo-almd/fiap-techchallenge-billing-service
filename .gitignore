@@ -75,8 +75,7 @@ logs/
 # AWS
 .aws/
 
-# Secrets
-*secret*
+# Secrets (real credentials and keys)
 *credentials*
 *.pem
 *.key
