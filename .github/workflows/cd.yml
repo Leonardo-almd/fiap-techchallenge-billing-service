@@ -63,11 +63,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Ensure ECR repository exists
-        run: |
-          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --output text 2>/dev/null || \
-          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --image-scanning-configuration scanOnPush=true
-
       - name: Login to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
@@ -134,6 +129,7 @@ jobs:
             --header "Content-Type: application/vnd.api+json" \
             "https://app.terraform.io/api/v2/state-versions/${STATE_VERSION_ID}/outputs?page%5Bsize%5D=100")
 
+          # Helper function to extract value by output name (fails fast if output missing)
           get_output() {
             local val
             val=$(echo "$OUTPUTS" | jq -r --arg name "$1" '.data[] | select(.attributes.name == $name) | .attributes.value // empty')
@@ -144,6 +140,7 @@ jobs:
             echo "$val"
           }
 
+          # Extract and export outputs
           echo "IRSA_ROLE_ARN=$(get_output 'billing_service_irsa_role_arn')" >> $GITHUB_OUTPUT
           echo "DYNAMODB_TABLE_BUDGETS=$(get_output 'billing_dynamodb_budgets_table_name')" >> $GITHUB_OUTPUT
           echo "DYNAMODB_TABLE_PAYMENTS=$(get_output 'billing_dynamodb_payments_table_name')" >> $GITHUB_OUTPUT
@@ -155,20 +152,6 @@ jobs:
       - name: Update kubeconfig for EKS
         run: |
           aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
-
-      - name: Create secrets manifest from template
-        run: |
-          # k8s/secrets.yaml is gitignored; create from template so CD works without committing it
-          printf '%s\n' \
-            'apiVersion: v1' \
-            'kind: Secret' \
-            'metadata:' \
-            '  name: billing-service-secrets' \
-            '  namespace: billing-service' \
-            'type: Opaque' \
-            'data:' \
-            '  _PLACEHOLDER: __PLACEHOLDER_B64__' \
-            > k8s/secrets.yaml
 
       - name: Prepare Kubernetes manifests
         env:
@@ -183,7 +166,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # ConfigMap - table and queue names from Terraform
+          # Substitute values in configmap.yaml (from Terraform outputs)
           sed -i "s|__DYNAMODB_TABLE_BUDGETS__|${DYNAMODB_TABLE_BUDGETS}|g" k8s/configmap.yaml
           sed -i "s|__DYNAMODB_TABLE_PAYMENTS__|${DYNAMODB_TABLE_PAYMENTS}|g" k8s/configmap.yaml
           sed -i "s|__SQS_QUEUE_SERVICE_ORDER_EVENTS__|${SQS_QUEUE_SERVICE_ORDER_EVENTS}|g" k8s/configmap.yaml
@@ -191,21 +174,21 @@ jobs:
           sed -i "s|__SQS_QUEUE_QUOTE_APPROVED__|${SQS_QUEUE_QUOTE_APPROVED}|g" k8s/configmap.yaml
           sed -i "s|__SQS_QUEUE_PAYMENT_FAILED__|${SQS_QUEUE_PAYMENT_FAILED}|g" k8s/configmap.yaml
 
-          # ServiceAccount - IRSA role ARN
+          # Substitute values in service-account.yaml (IRSA role ARN)
           sed -i "s|__IRSA_ROLE_ARN__|${IRSA_ROLE_ARN}|g" k8s/service-account.yaml
 
-          # Deployment - image URI
+          # Substitute image in deployment
           sed -i "s|__IMAGE_URI__|${IMAGE_URI}|g" k8s/app-deployment.yaml
 
-          # Secrets - placeholder so the Secret resource is valid (Billing uses IRSA, no DB)
+          # Secrets - placeholder so the Secret resource is valid (Billing uses IRSA, not DB credentials)
           PLACEHOLDER_B64=$(echo -n 'irsa' | base64 -w0 2>/dev/null || echo -n 'irsa' | base64)
           sed -i "s|__PLACEHOLDER_B64__|${PLACEHOLDER_B64}|g" k8s/secrets.yaml
 
           echo "Kubernetes manifests prepared successfully"
 
       - name: Deploy to Kubernetes
-        id: deploy
         run: |
+          # Apply all resources
           kubectl apply -f k8s/namespace.yaml
           kubectl apply -f k8s/service-account.yaml
           kubectl apply -f k8s/configmap.yaml
@@ -214,43 +197,22 @@ jobs:
           kubectl apply -f k8s/app-service.yaml
           kubectl apply -f k8s/hpa.yaml
 
-          kubectl rollout status deployment/billing-service -n billing-service --timeout=600s
-
-      - name: Diagnose rollout failure
-        if: failure() && steps.deploy.outcome == 'failure'
-        run: |
-          mkdir -p _rollout-diagnosis
-          echo "## Rollout diagnosis (billing-service)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pods" >> $GITHUB_STEP_SUMMARY
-          kubectl get pods -n billing-service -l app=billing-service -o wide 2>/dev/null | tee -a $GITHUB_STEP_SUMMARY | tee _rollout-diagnosis/pods.txt || true
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Full diagnosis (download artifact \`rollout-diagnosis\`)" >> $GITHUB_STEP_SUMMARY
-          kubectl get events -n billing-service --sort-by='.lastTimestamp' 2>/dev/null | tail -80 > _rollout-diagnosis/events.txt || true
-          for POD in $(kubectl get pods -n billing-service -l app=billing-service -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
-            [[ -z "$POD" ]] && continue
-            kubectl logs "$POD" -n billing-service --tail=500 2>/dev/null > "_rollout-diagnosis/logs-${POD}.txt" || true
-            kubectl describe pod "$POD" -n billing-service 2>/dev/null > "_rollout-diagnosis/describe-${POD}.txt" || true
-          done
-
-      - name: Upload rollout diagnosis artifact
-        if: failure() && steps.deploy.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: rollout-diagnosis
-          path: _rollout-diagnosis/
-          retention-days: 7
+          # Wait for rollout
+          kubectl rollout status deployment/billing-service -n billing-service --timeout=300s
 
       - name: Get deployment info
         id: deployment-info
         run: |
+          # Get LoadBalancer external IP/hostname
           EXTERNAL_HOST=$(kubectl get svc billing-service -n billing-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
           if [[ -z "$EXTERNAL_HOST" ]]; then
             EXTERNAL_HOST=$(kubectl get svc billing-service -n billing-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
           fi
           echo "external-host=${EXTERNAL_HOST}" >> $GITHUB_OUTPUT
-          READY_PODS=$(kubectl get pods -n billing-service -l app=billing-service --no-headers 2>/dev/null | grep -c Running || echo "0")
-          TOTAL_PODS=$(kubectl get pods -n billing-service -l app=billing-service --no-headers 2>/dev/null | wc -l)
+
+          # Get pod status
+          READY_PODS=$(kubectl get pods -n billing-service -l app=billing-service --no-headers | grep -c Running || echo "0")
+          TOTAL_PODS=$(kubectl get pods -n billing-service -l app=billing-service --no-headers | wc -l)
           echo "pods=${READY_PODS}/${TOTAL_PODS}" >> $GITHUB_OUTPUT
 
       - name: Generate deployment summary
@@ -278,11 +240,14 @@ jobs:
           | Endpoint | URL |
           |----------|-----|
           | **Base URL** | \`${BASE_URL}\` |
+          | **Swagger UI** | [Open Swagger](${BASE_URL}/swagger-ui/index.html) |
+          | **OpenAPI Spec** | [Download JSON](${BASE_URL}/v3/api-docs) |
           | **Health Check** | \`${BASE_URL}/actuator/health\` |
 
-          ### 📋 Quick Test
+          ### 📋 Quick Test Commands
 
           \`\`\`bash
+          # Health check
           curl -s ${BASE_URL}/actuator/health | jq .
           \`\`\`
 

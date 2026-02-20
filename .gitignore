@@ -104,6 +104,5 @@ terraform/*.tfstate
 terraform/*.tfstate.backup
 terraform/.terraform.lock.hcl
 
-# Kubernetes secrets
-k8s/*secret*.yaml
+# Kubernetes secrets (secrets.yaml uses placeholders, populated by CD pipeline)
 k8s/*credentials*.yaml
