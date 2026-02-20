@@ -27,11 +27,9 @@ data:
   # Spring Configuration
   SPRING_PROFILES_ACTIVE: "production"
   
-  # Security / OAuth2 Resource Server
-  # O perfil production referencia ${JWT_ISSUER_URI} para validação de JWT.
-  # Em produção, deve apontar para o issuer real (ex: LB do monolito ou Cognito).
-  # Sem esta variável, o default https://auth.cargarage.com será usado.
-  JWT_ISSUER_URI: "https://auth.cargarage.com"
+  # Security / JWT — deixar em branco para desabilitar autenticação (todas as rotas abertas).
+  # Para habilitar JWT, definir a URL do issuer (ex: https://auth.cargarage.com).
+  JWT_ISSUER_URI: ""
   
   # Actuator Configuration
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
