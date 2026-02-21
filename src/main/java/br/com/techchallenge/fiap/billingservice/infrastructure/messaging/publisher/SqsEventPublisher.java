@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
@@ -28,19 +27,19 @@ public class SqsEventPublisher {
     private final SqsOperations sqsOperations;
     private final ObjectMapper objectMapper;
 
-    @Value("${aws.sqs.queues.billing-events}")
-    private String billingEventsQueueName;
+    @Value("${aws.sqs.queues.billing-events-url}")
+    private String billingEventsQueueUrl;
 
     /**
      * Publish an event to the billing events FIFO queue.
      */
     public void publishEvent(Object event) {
         try {
-            String queueUrl = getQueueUrl(billingEventsQueueName);
+            String queueUrl = billingEventsQueueUrl;
             String messageBody = objectMapper.writeValueAsString(event);
 
             log.info("Publishing event: {} to queue: {}",
-                    event.getClass().getSimpleName(), billingEventsQueueName);
+                    event.getClass().getSimpleName(), queueUrl);
 
             SendMessageRequest request = SendMessageRequest.builder()
                     .queueUrl(queueUrl)
@@ -70,12 +69,11 @@ public class SqsEventPublisher {
      * @param queueName the SQS standard queue name
      * @param payload   a simple Map that will be serialized to JSON
      */
-    public void publishToStandardQueue(String queueName, Map<String, Object> payload) {
+    public void publishToStandardQueue(String queueUrl, Map<String, Object> payload) {
         try {
-            String queueUrl = getQueueUrl(queueName);
             String messageBody = objectMapper.writeValueAsString(payload);
 
-            log.info("Publishing to standard queue: {}", queueName);
+            log.info("Publishing to standard queue: {}", queueUrl);
 
             SendMessageRequest request = SendMessageRequest.builder()
                     .queueUrl(queueUrl)
@@ -84,25 +82,14 @@ public class SqsEventPublisher {
 
             SendMessageResponse response = sqsOperations.sendMessage(request);
 
-            log.info("Published to standard queue {} - MessageId: {}", queueName, response.messageId());
+            log.info("Published to standard queue {} - MessageId: {}", queueUrl, response.messageId());
 
         } catch (JsonProcessingException e) {
-            log.error("Error serializing payload for queue: {}", queueName, e);
+            log.error("Error serializing payload for queue: {}", queueUrl, e);
             throw new MessagingException("Error serializing payload: " + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Error publishing to standard queue: {}", queueName, e);
+            log.error("Error publishing to standard queue: {}", queueUrl, e);
             throw new MessagingException("Error publishing to standard queue: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * Get SQS queue URL by queue name.
-     */
-    private String getQueueUrl(String queueName) {
-        GetQueueUrlRequest request = GetQueueUrlRequest.builder()
-                .queueName(queueName)
-                .build();
-
-        return sqsOperations.getQueueUrl(request).queueUrl();
     }
 }

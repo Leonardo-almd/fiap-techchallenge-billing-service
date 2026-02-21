@@ -32,8 +32,8 @@ public class ServiceOrderEventConsumer {
     private final ObjectMapper objectMapper;
     private final CreateBudgetUseCase createBudgetUseCase;
 
-    @Value("${aws.sqs.queues.service-order-events}")
-    private String queueName;
+    @Value("${aws.sqs.queues.service-order-events-url}")
+    private String queueUrl;
 
     /**
      * Poll for messages from service-order-events queue.
@@ -42,7 +42,6 @@ public class ServiceOrderEventConsumer {
     @Scheduled(fixedDelay = 5000)
     public void pollMessages() {
         try {
-            String queueUrl = getQueueUrl();
 
             ReceiveMessageRequest request = ReceiveMessageRequest.builder()
                     .queueUrl(queueUrl)
@@ -53,7 +52,7 @@ public class ServiceOrderEventConsumer {
             ReceiveMessageResponse response = sqsClient.receiveMessage(request);
 
             if (!response.messages().isEmpty()) {
-                log.info("Received {} messages from queue: {}", response.messages().size(), queueName);
+                log.info("Received {} messages from queue: {}", response.messages().size(), queueUrl);
 
                 for (Message message : response.messages()) {
                     processMessage(message, queueUrl);
@@ -173,10 +172,4 @@ public class ServiceOrderEventConsumer {
         sqsClient.deleteMessage(deleteRequest);
     }
 
-    private String getQueueUrl() {
-        GetQueueUrlRequest request = GetQueueUrlRequest.builder()
-                .queueName(queueName)
-                .build();
-        return sqsClient.getQueueUrl(request).queueUrl();
-    }
 }

@@ -28,8 +28,8 @@ public class BudgetEventOrchestrator {
 
     private final SqsEventPublisher eventPublisher;
 
-    @Value("${aws.sqs.queues.quote-approved-queue:quote-approved-queue}")
-    private String quoteApprovedQueueName;
+    @Value("${aws.sqs.queues.quote-approved-url}")
+    private String quoteApprovedQueueUrl;
 
     /**
      * Publish BudgetApprovedEvent to billing-events FIFO queue
@@ -61,7 +61,7 @@ public class BudgetEventOrchestrator {
             osPayload.put("totalAmount", budget.totalAmount().value());
             osPayload.put("timestamp", LocalDateTime.now().toString());
 
-            eventPublisher.publishToStandardQueue(quoteApprovedQueueName, osPayload);
+            eventPublisher.publishToStandardQueue(quoteApprovedQueueUrl, osPayload);
             log.info("BudgetApprovedEvent published to quote-approved-queue for OS: {}", budget.serviceOrderId());
         } catch (Exception e) {
             log.error("Failed to publish to quote-approved-queue for OS: {}", budget.serviceOrderId(), e);

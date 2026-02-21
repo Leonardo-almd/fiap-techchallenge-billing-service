@@ -39,8 +39,8 @@ public class PaymentProcessingOrchestrator {
     private final PaymentGatewaySimulator paymentGatewaySimulator;
     private final SqsEventPublisher eventPublisher;
 
-    @Value("${aws.sqs.queues.payment-failed-queue:payment-failed-queue}")
-    private String paymentFailedQueueName;
+    @Value("${aws.sqs.queues.payment-failed-url}")
+    private String paymentFailedQueueUrl;
 
     /**
      * Process pending payments.
@@ -161,7 +161,7 @@ public class PaymentProcessingOrchestrator {
             osPayload.put("paymentId", failedPayment.paymentId());
             osPayload.put("timestamp", now.toString());
 
-            eventPublisher.publishToStandardQueue(paymentFailedQueueName, osPayload);
+            eventPublisher.publishToStandardQueue(paymentFailedQueueUrl, osPayload);
             log.info("PaymentFailed published to payment-failed-queue for OS: {}", failedPayment.serviceOrderId());
         } catch (Exception e) {
             log.error("Failed to publish to payment-failed-queue for OS: {}", failedPayment.serviceOrderId(), e);
