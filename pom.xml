@@ -70,6 +70,13 @@
             <version>${aws.sdk.version}</version>
         </dependency>
         
+        <!-- AWS STS (required for IRSA - WebIdentityTokenFileCredentialsProvider) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sts</artifactId>
+            <version>${aws.sdk.version}</version>
+        </dependency>
+        
         <!-- UTILITY -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
