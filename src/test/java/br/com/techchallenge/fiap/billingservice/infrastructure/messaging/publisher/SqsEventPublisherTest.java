@@ -11,8 +11,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
@@ -39,7 +37,8 @@ class SqsEventPublisherTest {
         objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
         publisher = new SqsEventPublisher(sqsOperations, objectMapper);
-        ReflectionTestUtils.setField(publisher, "billingEventsQueueName", "billing-events");
+        ReflectionTestUtils.setField(publisher, "billingEventsQueueUrl",
+                "http://localhost:4566/000000000000/billing-events");
     }
 
     @Test
@@ -47,22 +46,16 @@ class SqsEventPublisherTest {
     void shouldPublishEventSuccessfully() {
         // Arrange
         BudgetApprovedEvent event = createBudgetApprovedEvent();
-        
-        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
-            .thenReturn(GetQueueUrlResponse.builder()
-                .queueUrl("http://localhost:4566/000000000000/billing-events")
-                .build());
-        
+
         when(sqsOperations.sendMessage(any(SendMessageRequest.class)))
-            .thenReturn(SendMessageResponse.builder()
-                .messageId("MSG-001")
-                .build());
+                .thenReturn(SendMessageResponse.builder()
+                        .messageId("MSG-001")
+                        .build());
 
         // Act
         publisher.publishEvent(event);
 
         // Assert
-        verify(sqsOperations).getQueueUrl(any(GetQueueUrlRequest.class));
         verify(sqsOperations).sendMessage(any(SendMessageRequest.class));
     }
 
@@ -72,14 +65,9 @@ class SqsEventPublisherTest {
         // Arrange
         BudgetApprovedEvent event = createBudgetApprovedEvent();
         ArgumentCaptor<SendMessageRequest> captor = ArgumentCaptor.forClass(SendMessageRequest.class);
-        
-        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
-            .thenReturn(GetQueueUrlResponse.builder()
-                .queueUrl("http://localhost:4566/queue")
-                .build());
-        
+
         when(sqsOperations.sendMessage(any(SendMessageRequest.class)))
-            .thenReturn(SendMessageResponse.builder().messageId("MSG-001").build());
+                .thenReturn(SendMessageResponse.builder().messageId("MSG-001").build());
 
         // Act
         publisher.publishEvent(event);
@@ -87,7 +75,7 @@ class SqsEventPublisherTest {
         // Assert
         verify(sqsOperations).sendMessage(captor.capture());
         SendMessageRequest request = captor.getValue();
-        
+
         assertThat(request.messageBody()).contains("budgetId");
         assertThat(request.messageBody()).contains("BUDGET-001");
     }
@@ -98,14 +86,9 @@ class SqsEventPublisherTest {
         // Arrange
         BudgetApprovedEvent event = createBudgetApprovedEvent();
         ArgumentCaptor<SendMessageRequest> captor = ArgumentCaptor.forClass(SendMessageRequest.class);
-        
-        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
-            .thenReturn(GetQueueUrlResponse.builder()
-                .queueUrl("http://localhost:4566/queue")
-                .build());
-        
+
         when(sqsOperations.sendMessage(any(SendMessageRequest.class)))
-            .thenReturn(SendMessageResponse.builder().messageId("MSG-001").build());
+                .thenReturn(SendMessageResponse.builder().messageId("MSG-001").build());
 
         // Act
         publisher.publishEvent(event);
@@ -113,7 +96,7 @@ class SqsEventPublisherTest {
         // Assert
         verify(sqsOperations).sendMessage(captor.capture());
         SendMessageRequest request = captor.getValue();
-        
+
         assertThat(request.messageGroupId()).isEqualTo("BudgetApprovedEvent");
     }
 
@@ -123,14 +106,9 @@ class SqsEventPublisherTest {
         // Arrange
         BudgetApprovedEvent event = createBudgetApprovedEvent();
         ArgumentCaptor<SendMessageRequest> captor = ArgumentCaptor.forClass(SendMessageRequest.class);
-        
-        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
-            .thenReturn(GetQueueUrlResponse.builder()
-                .queueUrl("http://localhost:4566/queue")
-                .build());
-        
+
         when(sqsOperations.sendMessage(any(SendMessageRequest.class)))
-            .thenReturn(SendMessageResponse.builder().messageId("MSG-001").build());
+                .thenReturn(SendMessageResponse.builder().messageId("MSG-001").build());
 
         // Act
         publisher.publishEvent(event);
@@ -138,7 +116,7 @@ class SqsEventPublisherTest {
         // Assert
         verify(sqsOperations).sendMessage(captor.capture());
         SendMessageRequest request = captor.getValue();
-        
+
         assertThat(request.messageDeduplicationId()).isNotNull();
         assertThat(request.messageDeduplicationId()).isNotBlank();
     }
@@ -148,26 +126,26 @@ class SqsEventPublisherTest {
     void shouldThrowMessagingExceptionWhenSqsFails() {
         // Arrange
         BudgetApprovedEvent event = createBudgetApprovedEvent();
-        
-        when(sqsOperations.getQueueUrl(any(GetQueueUrlRequest.class)))
-            .thenThrow(new RuntimeException("SQS error"));
+
+        when(sqsOperations.sendMessage(any(SendMessageRequest.class)))
+                .thenThrow(new RuntimeException("SQS error"));
 
         // Act & Assert
         assertThatThrownBy(() -> publisher.publishEvent(event))
-            .isInstanceOf(MessagingException.class)
-            .hasMessageContaining("Error publishing event to SQS");
+                .isInstanceOf(MessagingException.class)
+                .hasMessageContaining("Error publishing event to SQS");
     }
 
     private BudgetApprovedEvent createBudgetApprovedEvent() {
         return BudgetApprovedEvent.builder()
-            .eventId("EVT-001")
-            .budgetId("BUDGET-001")
-            .serviceOrderId("ORDER-001")
-            .customerId("CUST-001")
-            .vehicleId("VEH-001")
-            .totalAmount(new BigDecimal("100.00"))
-            .approvedAt(LocalDateTime.now())
-            .timestamp(LocalDateTime.now())
-            .build();
+                .eventId("EVT-001")
+                .budgetId("BUDGET-001")
+                .serviceOrderId("ORDER-001")
+                .customerId("CUST-001")
+                .vehicleId("VEH-001")
+                .totalAmount(new BigDecimal("100.00"))
+                .approvedAt(LocalDateTime.now())
+                .timestamp(LocalDateTime.now())
+                .build();
     }
 }
