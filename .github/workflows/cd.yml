@@ -144,10 +144,10 @@ jobs:
           echo "IRSA_ROLE_ARN=$(get_output 'billing_service_irsa_role_arn')" >> $GITHUB_OUTPUT
           echo "DYNAMODB_TABLE_BUDGETS=$(get_output 'billing_dynamodb_budgets_table_name')" >> $GITHUB_OUTPUT
           echo "DYNAMODB_TABLE_PAYMENTS=$(get_output 'billing_dynamodb_payments_table_name')" >> $GITHUB_OUTPUT
-          echo "SQS_QUEUE_SERVICE_ORDER_EVENTS=$(get_output 'sqs_service_order_events_queue_name')" >> $GITHUB_OUTPUT
-          echo "SQS_QUEUE_BILLING_EVENTS=$(get_output 'sqs_billing_events_queue_name')" >> $GITHUB_OUTPUT
-          echo "SQS_QUEUE_QUOTE_APPROVED=$(get_output 'sqs_quote_approved_queue_name')" >> $GITHUB_OUTPUT
-          echo "SQS_QUEUE_PAYMENT_FAILED=$(get_output 'sqs_payment_failed_queue_name')" >> $GITHUB_OUTPUT
+          echo "SQS_QUEUE_SERVICE_ORDER_EVENTS_URL=$(get_output 'sqs_service_order_events_queue_url')" >> $GITHUB_OUTPUT
+          echo "SQS_QUEUE_BILLING_EVENTS_URL=$(get_output 'sqs_billing_events_queue_url')" >> $GITHUB_OUTPUT
+          echo "SQS_QUEUE_QUOTE_APPROVED_URL=$(get_output 'sqs_quote_approved_queue_url')" >> $GITHUB_OUTPUT
+          echo "SQS_QUEUE_PAYMENT_FAILED_URL=$(get_output 'sqs_payment_failed_queue_url')" >> $GITHUB_OUTPUT
 
       - name: Update kubeconfig for EKS
         run: |
@@ -158,10 +158,10 @@ jobs:
           IRSA_ROLE_ARN: ${{ steps.parsed-outputs.outputs.IRSA_ROLE_ARN }}
           DYNAMODB_TABLE_BUDGETS: ${{ steps.parsed-outputs.outputs.DYNAMODB_TABLE_BUDGETS }}
           DYNAMODB_TABLE_PAYMENTS: ${{ steps.parsed-outputs.outputs.DYNAMODB_TABLE_PAYMENTS }}
-          SQS_QUEUE_SERVICE_ORDER_EVENTS: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_SERVICE_ORDER_EVENTS }}
-          SQS_QUEUE_BILLING_EVENTS: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_BILLING_EVENTS }}
-          SQS_QUEUE_QUOTE_APPROVED: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_QUOTE_APPROVED }}
-          SQS_QUEUE_PAYMENT_FAILED: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_PAYMENT_FAILED }}
+          SQS_QUEUE_SERVICE_ORDER_EVENTS_URL: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_SERVICE_ORDER_EVENTS_URL }}
+          SQS_QUEUE_BILLING_EVENTS_URL: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_BILLING_EVENTS_URL }}
+          SQS_QUEUE_QUOTE_APPROVED_URL: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_QUOTE_APPROVED_URL }}
+          SQS_QUEUE_PAYMENT_FAILED_URL: ${{ steps.parsed-outputs.outputs.SQS_QUEUE_PAYMENT_FAILED_URL }}
           IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
         run: |
           set -euo pipefail
@@ -169,10 +169,10 @@ jobs:
           # Substitute values in configmap.yaml (from Terraform outputs)
           sed -i "s|__DYNAMODB_TABLE_BUDGETS__|${DYNAMODB_TABLE_BUDGETS}|g" k8s/configmap.yaml
           sed -i "s|__DYNAMODB_TABLE_PAYMENTS__|${DYNAMODB_TABLE_PAYMENTS}|g" k8s/configmap.yaml
-          sed -i "s|__SQS_QUEUE_SERVICE_ORDER_EVENTS__|${SQS_QUEUE_SERVICE_ORDER_EVENTS}|g" k8s/configmap.yaml
-          sed -i "s|__SQS_QUEUE_BILLING_EVENTS__|${SQS_QUEUE_BILLING_EVENTS}|g" k8s/configmap.yaml
-          sed -i "s|__SQS_QUEUE_QUOTE_APPROVED__|${SQS_QUEUE_QUOTE_APPROVED}|g" k8s/configmap.yaml
-          sed -i "s|__SQS_QUEUE_PAYMENT_FAILED__|${SQS_QUEUE_PAYMENT_FAILED}|g" k8s/configmap.yaml
+          sed -i "s|__SQS_QUEUE_SERVICE_ORDER_EVENTS_URL__|${SQS_QUEUE_SERVICE_ORDER_EVENTS_URL}|g" k8s/configmap.yaml
+          sed -i "s|__SQS_QUEUE_BILLING_EVENTS_URL__|${SQS_QUEUE_BILLING_EVENTS_URL}|g" k8s/configmap.yaml
+          sed -i "s|__SQS_QUEUE_QUOTE_APPROVED_URL__|${SQS_QUEUE_QUOTE_APPROVED_URL}|g" k8s/configmap.yaml
+          sed -i "s|__SQS_QUEUE_PAYMENT_FAILED_URL__|${SQS_QUEUE_PAYMENT_FAILED_URL}|g" k8s/configmap.yaml
 
           # Substitute values in service-account.yaml (IRSA role ARN)
           sed -i "s|__IRSA_ROLE_ARN__|${IRSA_ROLE_ARN}|g" k8s/service-account.yaml
