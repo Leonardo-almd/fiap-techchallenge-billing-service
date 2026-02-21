@@ -144,7 +144,7 @@ jobs:
           echo "IRSA_ROLE_ARN=$(get_output 'billing_service_irsa_role_arn')" >> $GITHUB_OUTPUT
           echo "DYNAMODB_TABLE_BUDGETS=$(get_output 'billing_dynamodb_budgets_table_name')" >> $GITHUB_OUTPUT
           echo "DYNAMODB_TABLE_PAYMENTS=$(get_output 'billing_dynamodb_payments_table_name')" >> $GITHUB_OUTPUT
-          echo "SQS_QUEUE_SERVICE_ORDER_EVENTS=$(get_output 'sqs_os_order_events_queue_name')" >> $GITHUB_OUTPUT
+          echo "SQS_QUEUE_SERVICE_ORDER_EVENTS=$(get_output 'sqs_service_order_events_queue_name')" >> $GITHUB_OUTPUT
           echo "SQS_QUEUE_BILLING_EVENTS=$(get_output 'sqs_billing_events_queue_name')" >> $GITHUB_OUTPUT
           echo "SQS_QUEUE_QUOTE_APPROVED=$(get_output 'sqs_quote_approved_queue_name')" >> $GITHUB_OUTPUT
           echo "SQS_QUEUE_PAYMENT_FAILED=$(get_output 'sqs_payment_failed_queue_name')" >> $GITHUB_OUTPUT
